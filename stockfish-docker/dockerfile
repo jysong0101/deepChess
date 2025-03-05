@@ -1,0 +1,30 @@
+# 베이스 이미지 선택 (Ubuntu 22.04 사용)
+FROM ubuntu:22.04
+
+# 필수 패키지 설치
+RUN apt-get update && apt-get install -y \
+    g++ \
+    make \
+    cmake \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# Stockfish 소스 코드 클론
+RUN git clone https://github.com/official-stockfish/Stockfish.git
+
+# Stockfish 컴파일
+WORKDIR /app/Stockfish/src
+RUN make -j$(nproc) build ARCH=x86-64-sse41-popcnt
+
+# 실행 파일 복사
+RUN cp stockfish /app/stockfish
+
+# 실행 가능하도록 권한 추가
+RUN chmod +x /app/stockfish
+
+# 실행 파일을 컨테이너 내에서 실행
+CMD ["/app/stockfish"]
