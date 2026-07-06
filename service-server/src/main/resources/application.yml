@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    include: oauth
   datasource:
     url: jdbc:h2:mem:deepchess_db;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
@@ -8,6 +10,8 @@ spring:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: true
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
@@ -16,3 +20,6 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+
+server:
+  forward-headers-strategy: framework
