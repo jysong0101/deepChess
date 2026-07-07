@@ -1,13 +1,15 @@
 package com.deepchess.service_server.config;
 
-import com.deepchess.service_server.service.CustomOAuth2UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.deepchess.service_server.service.CustomOAuth2UserService;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -36,7 +38,8 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                .defaultSuccessUrl("/", true) // 로그인 성공 시 메인 화면으로 리다이렉트
+                //.defaultSuccessUrl("/", true) // 로그인 성공 시 메인 화면으로 리다이렉트
+                .defaultSuccessUrl("/board.html", true)
             );
 
         return http.build();

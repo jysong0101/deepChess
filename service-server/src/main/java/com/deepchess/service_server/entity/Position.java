@@ -44,11 +44,17 @@ public class Position extends BaseEntity {
     @Column(nullable = false)
     private String fen;
 
+    // ⬇️ 필드를 위쪽으로 올렸습니다.
+    @Column(name = "MOVE_SAN")
+    private String moveSan; 
+
+    // ⬇️ 생성자 파라미터와 내부에 moveSan을 추가했습니다!
     @Builder
-    public Position(Game game, Position parentPosition, String moveUci, String fen) {
+    public Position(Game game, Position parentPosition, String moveUci, String fen, String moveSan) {
         this.game = game;
         this.parentPosition = parentPosition;
         this.moveUci = moveUci;
         this.fen = fen;
+        this.moveSan = moveSan;
     }
 }
