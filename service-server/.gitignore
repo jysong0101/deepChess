@@ -39,3 +39,7 @@ out/
 
 # Secret Files
 application-oauth.yml
+
+# 코드 저장 코드 및 저장 파일
+export_context.py
+deepchess_context.txt
