@@ -8,47 +8,106 @@
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 50px; display: flex; gap: 40px; background-color: #f4f7f6; }
-        #myBoard { width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .control-panel { display: flex; flex-direction: column; gap: 15px; width: 350px; }
-        button { padding: 12px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        #newGameBtn { background-color: #28a745; }
-        #analyzeBtn { background-color: #007bff; }
-        #analyzeBtn:disabled { background-color: #cccccc; cursor: not-allowed; }
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --bg: #f4f7f6;
+            --border: #dee2e6;
+        }
+
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+            margin: 30px; 
+            display: flex; 
+            gap: 20px; 
+            background-color: var(--bg); 
+            align-items: flex-start;
+        }
+
+        /* 1. 보드 영역 */
+        #board-wrapper { display: flex; flex-direction: column; gap: 15px; }
+        #myBoard { width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
         
-        .result-box, .history-box { background-color: white; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .history-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 5px; }
+        .nav-container { display: flex; gap: 8px; width: 400px; }
+        .nav-btn { 
+            flex: 1; padding: 12px; background-color: var(--secondary); color: white; 
+            border: none; border-radius: 6px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:hover { background-color: #1a252f; transform: translateY(-1px); }
+        .nav-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+        /* 2. 기보 히스토리 영역 */
+        #history-wrapper { width: 280px; display: flex; flex-direction: column; }
+        .history-box { 
+            background-color: white; padding: 20px; border-radius: 12px; 
+            border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            height: 460px;
+        }
+        .history-list { 
+            height: calc(100% - 30px); overflow-y: auto; display: flex; flex-direction: column; gap: 5px; 
+            padding-right: 5px; margin-top: 10px;
+        }
+        .history-list::-webkit-scrollbar { width: 6px; }
+        .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+        .history-item { 
+            padding: 8px 12px; cursor: pointer; font-size: 0.95em; border-radius: 6px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border: 1px solid #eee; transition: 0.2s;
+        }
+        .history-item:hover { background-color: #f8f9fa; border-color: var(--primary); }
+        .active-node { background-color: #e1f0fa !important; border: 1px solid var(--primary) !important; font-weight: bold; }
+
+        /* 3. 컨트롤 패널 */
+        .control-panel { display: flex; flex-direction: column; gap: 15px; width: 300px; }
+        .panel-box { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        button { padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { filter: brightness(1.1); }
         
-        .history-item { padding: 10px; cursor: pointer; font-size: 1em; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e0e0e0; transition: 0.15s; }
-        .history-item:hover { filter: brightness(0.95); }
-        .active-node { outline: 2px solid #007bff; box-shadow: 0 0 8px rgba(0,123,255,0.4); }
+        #newGameBtn { background-color: #27ae60; width: 100%; }
+        #analyzeBtn { background-color: var(--primary); width: 100%; }
+        #analyzeBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .game-result { font-weight: bold; color: #27ae60; margin-top: 10px; text-align: center; }
+        h4 { margin-top: 0; margin-bottom: 10px; color: #333; }
     </style>
 </head>
 <body>
 
-    <div id="myBoard"></div>
+    <div id="board-wrapper">
+        <div id="myBoard"></div>
+        <div class="nav-container">
+            <button class="nav-btn" onclick="moveFirst()"><svg viewBox="0 0 24 24"><path d="M19 12L12 19L5 12M19 5L12 12L5 5"/></svg></button>
+            <button class="nav-btn" onclick="movePrev()"><svg viewBox="0 0 24 24"><path d="M15 18L9 12L15 6"/></svg></button>
+            <button class="nav-btn" onclick="moveNext()"><svg viewBox="0 0 24 24"><path d="M9 18L15 12L9 6"/></svg></button>
+            <button class="nav-btn" onclick="moveLast()"><svg viewBox="0 0 24 24"><path d="M5 12L12 5L19 12M5 19L12 12L19 19"/></svg></button>
+            <button class="nav-btn" onclick="board.flip()" title="보드 회전">🔄</button>
+        </div>
+    </div>
+
+    <div id="history-wrapper">
+        <div class="history-box">
+            <h4>📜 기보 히스토리</h4>
+            <div id="historyList" class="history-list"></div>
+        </div>
+    </div>
 
     <div class="control-panel">
-        <h2>🌳 기보 & 분기 테스트</h2>
-        
         <button id="newGameBtn" style="display: none;">새 분석 보드 생성</button>
 
-        <div class="result-box" id="importSection" style="margin-bottom: 5px; display: none;">
-            <h4 style="margin-top:0; color:#f39c12;">📁 기보 불러오기 (PGN/FEN)</h4>
-            <input type="text" id="importData" placeholder="여기에 FEN 또는 PGN 텍스트 입력" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            <button id="importBtn" style="background-color: #f39c12; width: 100%;">기보 적용 및 서버 저장</button>
+        <div class="panel-box" id="importSection" style="display: none;">
+            <h4 style="color:#f39c12;">📁 기보 불러오기</h4>
+            <input type="text" id="importData" placeholder="FEN 또는 PGN 입력" style="width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button id="importBtn" style="background-color: #f39c12; width: 100%;">적용 및 저장</button>
         </div>
         
-        <button id="analyzeBtn" disabled>현재 국면 분석하기 (Mock)</button>
+        <button id="analyzeBtn" disabled>현재 국면 분석하기</button>
         
-        <div class="result-box">
-            <h4 style="margin-top:0;">현재 국면 분석 결과</h4>
-            <div id="result">대기 중...</div>
-        </div>
-
-        <div class="history-box">
-            <h4 style="margin-top:0;">기보 히스토리</h4>
-            <div id="historyList" class="history-list"></div>
+        <div class="panel-box">
+            <h4>분석 결과</h4>
+            <div id="result" style="color: #666; font-size: 0.9em;">대기 중...</div>
+            <div id="gameResult" class="game-result"></div>
         </div>
     </div>
 
@@ -56,20 +115,13 @@
         var game = new Chess(); 
         var board = null;
         var currentGameId = null;
-        var currentParentPositionId = null;
-        var lastMoveSan = null; 
+        var currentMoveIndex = -1;
+        var fullMoveList = [];
 
         var onDrop = function(source, target) {
             if (!currentGameId) return 'snapback';
-
-            var move = game.move({
-                from: source,
-                to: target,
-                promotion: 'q'
-            });
-
+            var move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
-            lastMoveSan = move.san; 
         };
 
         board = Chessboard('myBoard', {
@@ -79,6 +131,42 @@
             onDrop: onDrop
         });
 
+        // --- 핵심 개선: 자동 스크롤 기능이 포함된 UI 갱신 ---
+        function updateUI() {
+            $('.history-item').removeClass('active-node');
+            if (currentMoveIndex >= 0) {
+                var activeEl = $(`.history-item[data-index="${currentMoveIndex}"]`);
+                activeEl.addClass('active-node');
+                
+                // 선택된 기보 항목이 보이도록 부드럽게 스크롤
+                activeEl[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function moveFirst() { game.reset(); board.position(game.fen()); currentMoveIndex = -1; updateUI(); }
+        function moveLast() { if (fullMoveList.length === 0) return; game.load(fullMoveList[fullMoveList.length - 1].fen); board.position(game.fen()); currentMoveIndex = fullMoveList.length - 1; updateUI(); }
+        function movePrev() { if (currentMoveIndex < 0) return; currentMoveIndex--; if (currentMoveIndex < 0) { game.reset(); } else { game.load(fullMoveList[currentMoveIndex].fen); } board.position(game.fen()); updateUI(); }
+        function moveNext() { if (currentMoveIndex >= fullMoveList.length - 1) return; currentMoveIndex++; game.load(fullMoveList[currentMoveIndex].fen); board.position(game.fen()); updateUI(); }
+
+        $(document).keydown(function(e) {
+            if ($("input:focus").length > 0) return;
+            if (e.which === 37) movePrev();
+            if (e.which === 39) moveNext();
+            if (e.which === 38) moveFirst();
+            if (e.which === 40) moveLast();
+        });
+
+        function checkResult(pgn) {
+            const results = ["1-0", "0-1", "1/2-1/2"];
+            for(let r of results) {
+                if(pgn.includes(" " + r) || pgn.endsWith(r)) {
+                    $('#gameResult').text("결과: " + r);
+                    return;
+                }
+            }
+            $('#gameResult').text("");
+        }
+
         function loadGameTree() {
             if (!currentGameId) return;
             $.ajax({
@@ -86,33 +174,17 @@
                 method: 'GET',
                 success: function(treeData) {
                     $('#historyList').empty();
-                    
-                    treeData.forEach(function(node) {
-                        if (!node.moveSan) return; 
-
-                        var isCurrent = (node.positionId === currentParentPositionId) ? 'active-node' : '';
+                    fullMoveList = treeData; 
+                    treeData.forEach(function(node, index) {
                         var fenParts = node.fen.split(' ');
-                        var activeColor = fenParts[1]; 
-                        var moveNum = parseInt(fenParts[5], 10); 
-                        var playedByWhite = (activeColor === 'b');
-                        
-                        if (!playedByWhite) {
-                            moveNum -= 1;
-                        }
-                        
-                        var bgColor = playedByWhite ? '#ffffff' : '#f0f2f5';
-                        var indicator = playedByWhite ? moveNum + ". " : moveNum + "... ";
-                        var sanText = indicator + "<strong>" + node.moveSan + "</strong>";
-
-                        var itemHtml = 
-                            '<div class="history-item ' + isCurrent + '" ' +
-                                 'style="background-color: ' + bgColor + ';" ' +
-                                 'data-pos-id="' + node.positionId + '" ' +
-                                 'data-fen="' + node.fen + '">' +
-                                '<div>' + sanText + ' <span style="font-size:0.7em; color:#aaa;">(ID:' + node.positionId + ')</span></div>' +
-                                '<div style="color:#d9534f; font-weight:bold; font-size:0.9em;">' + (node.engineScore || 'N/A') + '</div>' +
-                            '</div>';
-                        
+                        var moveNum = parseInt(fenParts[5], 10);
+                        var playedByWhite = (fenParts[1] === 'b');
+                        if (!playedByWhite) moveNum -= 1;
+                        var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
+                        var itemHtml = '<div class="history-item" data-index="'+index+'" data-fen="' + node.fen + '">' +
+                                       '<div>' + sanText + '</div>' +
+                                       '<div style="color:#d9534f; font-size:0.8em;">' + (node.engineScore || '') + '</div>' +
+                                       '</div>';
                         $('#historyList').append(itemHtml);
                     });
                 }
@@ -121,14 +193,10 @@
 
         $(document).on('click', '.history-item', function() {
             var targetFen = $(this).data('fen');
-            var targetPosId = $(this).data('pos-id');
-            
+            currentMoveIndex = $(this).data('index');
             game.load(targetFen); 
             board.position(targetFen); 
-            
-            currentParentPositionId = targetPosId;
-            $('#result').html('<span style="color: blue;">시간 여행 완료!<br>여기서 수를 두면 분기가 생성됩니다.</span>');
-            loadGameTree(); 
+            updateUI();
         });
 
         $('#newGameBtn').on('click', function() {
@@ -137,126 +205,50 @@
                 method: 'POST',
                 success: function(res) {
                     currentGameId = res.gameId;
-                    currentParentPositionId = null;
-                    lastMoveSan = null;
-                    game.reset(); 
-                    board.start(); 
+                    currentMoveIndex = -1;
+                    fullMoveList = [];
+                    game.reset(); board.start(); 
                     $('#analyzeBtn').prop('disabled', false);
-                    $('#result').html('새 게임이 시작되었습니다!');
                     $('#historyList').empty();
+                    $('#gameResult').text("");
                 }
             });
         });
 
-        $('#analyzeBtn').on('click', function() {
-            if (!currentGameId || !lastMoveSan) {
-                alert("말을 먼저 움직인 후 분석을 눌러주세요!"); return;
+        $('#importBtn').on('click', function() {
+            var inputData = $('#importData').val().trim();
+            if (!inputData) return;
+            checkResult(inputData);
+            var isFen = inputData.includes('/') && (inputData.includes(' w ') || inputData.includes(' b '));
+            var loadSuccess = isFen ? game.load(inputData) : game.load_pgn(inputData);
+            if (!loadSuccess) { alert("유효하지 않은 형식입니다."); return; }
+            var history = game.history({ verbose: true });
+            var moveList = [];
+            var tempGame = new Chess();
+            if (isFen) { moveList.push({ fen: inputData, moveSan: "START" }); } else {
+                history.forEach(function(move) { tempGame.move(move.san); moveList.push({ fen: tempGame.fen(), moveSan: move.san }); });
             }
-            
-            $('#result').html('<i>분석 중... ⏳</i>');
-
+            fullMoveList = moveList;
+            currentMoveIndex = fullMoveList.length - 1;
             $.ajax({
-                url: '/api/analysis',
+                url: '/api/games/import',
                 method: 'POST',
-                data: { 
-                    gameId: currentGameId,
-                    parentPositionId: currentParentPositionId,
-                    fen: game.fen(),
-                    moveSan: lastMoveSan,
-                    depth: 20 
-                },
-                success: function(response) {
-                    currentParentPositionId = response.positionId;
-                    $('#result').html(
-                        '<strong style="color: #d9534f;">점수: ' + response.engineScore + '</strong><br>' +
-                        '<strong>추천 수:</strong> ' + response.bestMoveUci
-                    );
+                contentType: 'application/json',
+                data: JSON.stringify({ isFen: isFen, initialFen: isFen ? inputData : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", pgnContent: isFen ? null : inputData, moves: moveList }),
+                success: function(res) {
+                    currentGameId = res.gameId;
+                    board.position(game.fen());
+                    $('#result').html('<span style="color: #27ae60;">✅ DB 저장 완료!</span>');
+                    $('#analyzeBtn').prop('disabled', false);
                     loadGameTree();
                 }
             });
         });
 
-        // 🚀 우아한 하이브리드 패턴: 기보 파싱 및 백엔드 일괄 전송
-        $('#importBtn').on('click', function() {
-            var inputData = $('#importData').val().trim();
-            if (!inputData) {
-                alert("불러올 PGN이나 FEN 텍스트를 먼저 입력해주세요!");
-                return;
-            }
-            
-            var isFen = inputData.includes('/') && (inputData.includes(' w ') || inputData.includes(' b '));
-            var loadSuccess = isFen ? game.load(inputData) : game.load_pgn(inputData);
-
-            if (!loadSuccess) {
-                alert("❌ 유효하지 않은 형식입니다. 올바른 PGN이나 FEN인지 확인해주세요.");
-                return;
-            }
-
-            // 기보 배열 추출 로직
-            var history = game.history({ verbose: true });
-            var moveList = [];
-            
-            var tempGame = new Chess();
-            if (isFen) {
-                moveList.push({ fen: inputData, moveSan: null });
-            } else {
-                history.forEach(function(move) {
-                    tempGame.move(move.san);
-                    moveList.push({
-                        fen: tempGame.fen(),
-                        moveSan: move.san
-                    });
-                });
-            }
-
-            $('#result').html('<i>서버에 기보를 일괄 저장하는 중... ⏳</i>');
-
-            // 서버 Batch API로 JSON 데이터 전송
-            $.ajax({
-                url: '/api/games/import',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    isFen: isFen,
-                    initialFen: isFen ? inputData : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                    pgnContent: isFen ? null : inputData,
-                    moves: moveList
-                }),
-                success: function(res) {
-                    currentGameId = res.gameId;
-                    currentParentPositionId = (res.lastPositionId !== -1) ? res.lastPositionId : null;
-                    
-                    board.position(game.fen());
-                    $('#result').html(
-                        '<strong style="color: #27ae60;">✅ DB 저장 완료!</strong><br>' +
-                        '기보가 성공적으로 로드되었습니다.'
-                    );
-                    
-                    $('#analyzeBtn').prop('disabled', false);
-                    loadGameTree(); // 우측 패널에 DB에 저장된 히스토리를 쫙 뿌려줌
-                },
-                error: function(err) {
-                    alert("서버 저장 중 오류가 발생했습니다.");
-                    console.error(err);
-                }
-            });
-        });
-
-        // 페이지 로드 시 모드 분리
         $(document).ready(function() {
             var mode = localStorage.getItem("mode");
-            
-            if (mode === "import") {
-                $('#newGameBtn').hide();      
-                $('#importSection').show();   
-                $('#importData').focus();
-                $('#result').html('<i>불러올 기보(PGN/FEN)를 우측 패널에 입력해주세요.</i>');
-            } else {
-                $('#importSection').hide();   
-                $('#newGameBtn').show();      
-                $('#newGameBtn').click();     
-            }
-            
+            if (mode === "import") { $('#newGameBtn').hide(); $('#importSection').show(); } 
+            else { $('#importSection').hide(); $('#newGameBtn').show(); $('#newGameBtn').click(); }
             localStorage.removeItem("mode"); 
         });
     </script>
