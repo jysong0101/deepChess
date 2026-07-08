@@ -19,10 +19,10 @@
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
             margin: 40px; 
             display: flex; 
-            gap: 25px; /* 20px -> 25px 간격 확대 */
+            gap: 25px; 
             background-color: var(--bg); 
             align-items: flex-start;
-            justify-content: center; /* 전체 화면 중앙 정렬 추가 */
+            justify-content: center; /* 화면 정중앙 정렬 */
         }
 
         /* 1. 보드 영역 (1.3배 확대) */
@@ -43,7 +43,7 @@
         .history-box { 
             background-color: white; padding: 25px; border-radius: 12px; 
             border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            height: 580px; /* 커진 보드 높이에 맞춰 조절 */
+            height: 580px; 
         }
         .history-list { 
             height: calc(100% - 40px); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; 
@@ -73,35 +73,56 @@
         .game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
         h4 { margin-top: 0; margin-bottom: 15px; color: #333; font-size: 1.2em; }
 
-        /* =========================================
-           📱 반응형 (미디어 쿼리) 설정
-           ========================================= */
-        
-        /* 1. 태블릿 & 작은 모니터 (가로 1350px 이하) */
-        @media (max-width: 1350px) {
-            body { 
-                flex-wrap: wrap; /* 공간이 부족하면 자연스럽게 아래로 줄바꿈 */
-            }
+        /* 🟢 이동 가능한 칸 표시용 CSS (반투명한 검은 점) */
+        .legal-move {
+            position: relative;
+        }
+        .legal-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30%;
+            height: 30%;
+            background-color: rgba(0, 0, 0, 0.25); 
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; 
         }
 
-        /* 2. 스마트폰 (가로 600px 이하) */
+        /* 📱 반응형 미디어 쿼리 설정 */
+        @media (max-width: 1350px) {
+            body { flex-wrap: wrap; }
+        }
         @media (max-width: 600px) {
-            body { 
-                margin: 15px; 
-                gap: 15px; 
-            }
-            
-            /* 모든 요소를 화면 꽉 차게 100%로 변경 (최대 크기는 520px 유지) */
+            body { margin: 15px; gap: 15px; }
             #board-wrapper, .nav-container, #history-wrapper, .control-panel { 
                 width: 100%; 
                 max-width: 520px; 
                 margin: 0 auto;
             }
-            
             #myBoard { width: 100%; }
-            
-            /* 모바일 세로 화면을 고려해 기보 창 높이를 조금 줄임 */
             .history-box { height: 350px; }
+        }
+
+        /* 🌳 트리 구조: 서브 갈래(Variation) 디자인 */
+        .variation-block {
+            margin-left: 25px;
+            padding-left: 10px;
+            border-left: 3px solid #bdc3c7; /* 회색 세로선으로 갈래 표시 */
+            margin-top: 5px;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        
+        /* 꺾이는 화살표 아이콘 */
+        .variation-block::before {
+            content: '↳';
+            position: absolute;
+            left: -18px;
+            top: 10px;
+            color: #bdc3c7;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -115,9 +136,7 @@
             <button class="nav-btn" onclick="moveNext()"><svg viewBox="0 0 24 24"><path d="M9 18L15 12L9 6"/></svg></button>
             <button class="nav-btn" onclick="moveLast()"><svg viewBox="0 0 24 24"><path d="M6 18L12 12L6 6M13 18L19 12L13 6"/></svg></button>
             <button class="nav-btn" onclick="board.flip()" title="보드 회전">
-                <svg viewBox="0 0 24 24">
-                    <path d="M8 4V20M4 8L8 4L12 8M16 20V4M12 16L16 20L20 16"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M8 4V20M4 8L8 4L12 8M16 20V4M12 16L16 20L20 16"/></svg>
             </button>
         </div>
     </div>
@@ -151,40 +170,177 @@
         var game = new Chess(); 
         var board = null;
         var currentGameId = null;
-        var currentMoveIndex = -1;
-        var fullMoveList = [];
 
-        var onDrop = function(source, target) {
-            if (!currentGameId) return 'snapback';
-            var move = game.move({ from: source, to: target, promotion: 'q' });
-            if (move === null) return 'snapback';
+        // 🌳 [트리 구조 상태 관리]
+        var treeNodes = {};
+        var rootNodeId = null;
+        var currentNodeId = null;
+        var tempIdCounter = 0;
+        var initialGameFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // 게임 시작 상태
+
+        // 1. 점 지우기 및 드래그 이벤트
+        function removeLegalMoves() {
+            $('#myBoard .square-55d63').removeClass('legal-move');
+        }
+        var onDragStart = function(source, piece, position, orientation) {
+            if (game.game_over()) return false;
+            var moves = game.moves({ square: source, verbose: true });
+            if (moves.length === 0) return false;
+            moves.forEach(function(move) { $('#myBoard .square-' + move.to).addClass('legal-move'); });
         };
 
-        board = Chessboard('myBoard', {
-            draggable: true,
-            position: 'start',
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-            onDrop: onDrop
-        });
+        // 2. 말 내려놓을 때 (트리 노드 추가 및 분기 생성)
+        var onDrop = function(source, target) {
+            removeLegalMoves();
+            if (!currentGameId) return 'snapback';
+            
+            var move = game.move({ from: source, to: target, promotion: 'q' });
+            if (move === null) return 'snapback';
 
+            tempIdCounter++;
+            var newNodeId = "temp_" + tempIdCounter;
+            var newNode = {
+                id: newNodeId,
+                fen: game.fen(),
+                moveSan: move.san,
+                parentId: currentNodeId,
+                children: []
+            };
+            
+            treeNodes[newNodeId] = newNode;
+            
+            if (currentNodeId) {
+                var existingChildId = treeNodes[currentNodeId].children.find(childId => treeNodes[childId].moveSan === move.san);
+                if (existingChildId) {
+                    currentNodeId = existingChildId;
+                    updateUI();
+                    return;
+                } else {
+                    treeNodes[currentNodeId].children.push(newNodeId);
+                }
+            } else {
+                rootNodeId = newNodeId;
+            }
+
+            currentNodeId = newNodeId;
+            renderTree();
+        };
+
+        var onSnapEnd = function() { board.position(game.fen()); };
+        var onSnapbackEnd = function(piece, square, position, orientation) { removeLegalMoves(); };
+
+        board = Chessboard('myBoard', {
+            draggable: true, position: 'start',
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+            onDragStart: onDragStart, onDrop: onDrop,
+            onSnapEnd: onSnapEnd, onSnapbackEnd: onSnapbackEnd
+        });
         $(window).resize(board.resize);
 
-        // --- 핵심 개선: 자동 스크롤 기능이 포함된 UI 갱신 ---
+        // 3. 🌳 트리를 HTML로 렌더링 (턴 번호 계산 복구!)
+        function renderTree() {
+            $('#historyList').empty();
+            if (!rootNodeId) return;
+            var html = buildTreeHtml(rootNodeId);
+            $('#historyList').html(html);
+            updateUI();
+        }
+
+        function buildTreeHtml(nodeId) {
+            var node = treeNodes[nodeId];
+            if (!node) return "";
+
+            var fenParts = node.fen.split(' ');
+            var moveNum = parseInt(fenParts[5], 10);
+            var playedByWhite = (fenParts[1] === 'b');
+            if (!playedByWhite) moveNum -= 1;
+            var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
+
+            var html = '<div class="history-item" data-id="' + node.id + '" data-fen="' + node.fen + '">' +
+                       '<div>' + sanText + '</div>' +
+                       '<div style="color:#d9534f; font-size:0.8em;">' + (node.engineScore || '') + '</div>' +
+                       '</div>';
+
+            if (node.children.length > 0) {
+                // 💡 1순위: 서브 갈래(Variation)를 먼저 HTML에 붙임! 
+                // 그래야 방금 둔 수 바로 밑에 갈래가 들여쓰기 되어 그려집니다.
+                for (var i = 1; i < node.children.length; i++) {
+                    html += '<div class="variation-block">';
+                    html += buildTreeHtml(node.children[i]);
+                    html += '</div>';
+                }
+                
+                // 💡 2순위: 그 밑에 원래 있던 메인 라인을 쭉 이어서 그려줍니다.
+                html += buildTreeHtml(node.children[0]);
+            }
+            return html;
+        }
+
+        // 4. UI 갱신 및 내비게이션 기능 (트리 구조에 맞게 전면 개편)
         function updateUI() {
             $('.history-item').removeClass('active-node');
-            if (currentMoveIndex >= 0) {
-                var activeEl = $(`.history-item[data-index="${currentMoveIndex}"]`);
+            if (currentNodeId) {
+                var activeEl = $(`.history-item[data-id="${currentNodeId}"]`);
                 activeEl.addClass('active-node');
-                
-                // 선택된 기보 항목이 보이도록 부드럽게 스크롤
-                activeEl[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (activeEl.length > 0) {
+                    activeEl[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
         }
 
-        function moveFirst() { game.reset(); board.position(game.fen()); currentMoveIndex = -1; updateUI(); }
-        function moveLast() { if (fullMoveList.length === 0) return; game.load(fullMoveList[fullMoveList.length - 1].fen); board.position(game.fen()); currentMoveIndex = fullMoveList.length - 1; updateUI(); }
-        function movePrev() { if (currentMoveIndex < 0) return; currentMoveIndex--; if (currentMoveIndex < 0) { game.reset(); } else { game.load(fullMoveList[currentMoveIndex].fen); } board.position(game.fen()); updateUI(); }
-        function moveNext() { if (currentMoveIndex >= fullMoveList.length - 1) return; currentMoveIndex++; game.load(fullMoveList[currentMoveIndex].fen); board.position(game.fen()); updateUI(); }
+        // 특정 수로 점프
+        function goToNode(nodeId) {
+            currentNodeId = nodeId;
+            var node = treeNodes[nodeId];
+            game.load(node.fen);
+            board.position(node.fen);
+            updateUI();
+        }
+
+        // 마우스 클릭 시 해당 수로 이동
+        $(document).on('click', '.history-item', function() {
+            var targetIdRaw = $(this).attr('data-id');
+            var actualId = isNaN(targetIdRaw) ? targetIdRaw : Number(targetIdRaw);
+            goToNode(actualId);
+        });
+
+        // 화살표 네비게이션
+        function moveFirst() {
+            currentNodeId = null;
+            game.load(initialGameFen);
+            board.position(initialGameFen);
+            updateUI();
+        }
+
+        function movePrev() {
+            if (!currentNodeId) return;
+            var node = treeNodes[currentNodeId];
+            if (node.parentId && treeNodes[node.parentId]) {
+                goToNode(node.parentId);
+            } else {
+                moveFirst();
+            }
+        }
+
+        function moveNext() {
+            if (!currentNodeId) {
+                if (rootNodeId) goToNode(rootNodeId);
+                return;
+            }
+            var node = treeNodes[currentNodeId];
+            if (node.children.length > 0) {
+                goToNode(node.children[0]); // 항상 첫 번째 가지(메인 라인)를 따라감
+            }
+        }
+
+        function moveLast() {
+            if (!rootNodeId) return;
+            var curr = currentNodeId ? currentNodeId : rootNodeId;
+            while(treeNodes[curr] && treeNodes[curr].children.length > 0) {
+                curr = treeNodes[curr].children[0];
+            }
+            goToNode(curr);
+        }
 
         $(document).keydown(function(e) {
             if ($("input:focus").length > 0) return;
@@ -192,6 +348,62 @@
             if (e.which === 39) moveNext();
             if (e.which === 38) moveFirst();
             if (e.which === 40) moveLast();
+        });
+
+        // 5. 서버에서 기보 트리 불러오기 (DB 데이터를 트리로 재조립)
+        function loadGameTree() {
+            if (!currentGameId) return;
+            $.ajax({
+                url: '/api/games/' + currentGameId + '/tree',
+                method: 'GET',
+                success: function(treeData) {
+                    treeNodes = {};
+                    rootNodeId = null;
+                    currentNodeId = null;
+
+                    // 1. 노드 딕셔너리 생성
+                    treeData.forEach(function(node) {
+                        treeNodes[node.positionId] = {
+                            id: node.positionId,
+                            fen: node.fen,
+                            moveSan: node.moveSan,
+                            parentId: node.parentPositionId,
+                            engineScore: node.engineScore,
+                            children: []
+                        };
+                    });
+
+                    // 2. 부모-자식 관계 연결
+                    treeData.forEach(function(node) {
+                        if (node.parentPositionId) {
+                            if (treeNodes[node.parentPositionId]) {
+                                treeNodes[node.parentPositionId].children.push(node.positionId);
+                            }
+                        } else {
+                            if (!rootNodeId) rootNodeId = node.positionId;
+                        }
+                    });
+
+                    renderTree();
+                    moveLast(); // 기보를 다 불러온 후 제일 마지막 수로 시점 이동
+                }
+            });
+        }
+
+        $('#newGameBtn').on('click', function() {
+            $.ajax({
+                url: '/api/games',
+                method: 'POST',
+                success: function(res) {
+                    currentGameId = res.gameId;
+                    initialGameFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+                    treeNodes = {}; rootNodeId = null; currentNodeId = null; tempIdCounter = 0;
+                    game.reset(); board.start(); 
+                    $('#analyzeBtn').prop('disabled', false);
+                    $('#historyList').empty();
+                    $('#gameResult').text("");
+                }
+            });
         });
 
         function checkResult(pgn) {
@@ -205,54 +417,6 @@
             $('#gameResult').text("");
         }
 
-        function loadGameTree() {
-            if (!currentGameId) return;
-            $.ajax({
-                url: '/api/games/' + currentGameId + '/tree',
-                method: 'GET',
-                success: function(treeData) {
-                    $('#historyList').empty();
-                    fullMoveList = treeData; 
-                    treeData.forEach(function(node, index) {
-                        var fenParts = node.fen.split(' ');
-                        var moveNum = parseInt(fenParts[5], 10);
-                        var playedByWhite = (fenParts[1] === 'b');
-                        if (!playedByWhite) moveNum -= 1;
-                        var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
-                        var itemHtml = '<div class="history-item" data-index="'+index+'" data-fen="' + node.fen + '">' +
-                                       '<div>' + sanText + '</div>' +
-                                       '<div style="color:#d9534f; font-size:0.8em;">' + (node.engineScore || '') + '</div>' +
-                                       '</div>';
-                        $('#historyList').append(itemHtml);
-                    });
-                }
-            });
-        }
-
-        $(document).on('click', '.history-item', function() {
-            var targetFen = $(this).data('fen');
-            currentMoveIndex = $(this).data('index');
-            game.load(targetFen); 
-            board.position(targetFen); 
-            updateUI();
-        });
-
-        $('#newGameBtn').on('click', function() {
-            $.ajax({
-                url: '/api/games',
-                method: 'POST',
-                success: function(res) {
-                    currentGameId = res.gameId;
-                    currentMoveIndex = -1;
-                    fullMoveList = [];
-                    game.reset(); board.start(); 
-                    $('#analyzeBtn').prop('disabled', false);
-                    $('#historyList').empty();
-                    $('#gameResult').text("");
-                }
-            });
-        });
-
         $('#importBtn').on('click', function() {
             var inputData = $('#importData').val().trim();
             if (!inputData) return;
@@ -260,25 +424,28 @@
             var isFen = inputData.includes('/') && (inputData.includes(' w ') || inputData.includes(' b '));
             var loadSuccess = isFen ? game.load(inputData) : game.load_pgn(inputData);
             if (!loadSuccess) { alert("유효하지 않은 형식입니다."); return; }
+            
+            initialGameFen = isFen ? inputData : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            
             var history = game.history({ verbose: true });
             var moveList = [];
-            var tempGame = new Chess();
+            var tempGame = new Chess(initialGameFen);
             if (isFen) { moveList.push({ fen: inputData, moveSan: "START" }); } else {
                 history.forEach(function(move) { tempGame.move(move.san); moveList.push({ fen: tempGame.fen(), moveSan: move.san }); });
             }
-            fullMoveList = moveList;
-            currentMoveIndex = fullMoveList.length - 1;
+            
             $.ajax({
                 url: '/api/games/import',
                 method: 'POST',
+                withCredentials: true,
                 contentType: 'application/json',
-                data: JSON.stringify({ isFen: isFen, initialFen: isFen ? inputData : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", pgnContent: isFen ? null : inputData, moves: moveList }),
+                data: JSON.stringify({ isFen: isFen, initialFen: initialGameFen, pgnContent: isFen ? null : inputData, moves: moveList }),
                 success: function(res) {
                     currentGameId = res.gameId;
                     board.position(game.fen());
                     $('#result').html('<span style="color: #27ae60;">✅ DB 저장 완료!</span>');
                     $('#analyzeBtn').prop('disabled', false);
-                    loadGameTree();
+                    loadGameTree(); // DB에 저장 후, 서버에서 트리를 다시 불러와 렌더링
                 }
             });
         });
