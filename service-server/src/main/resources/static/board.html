@@ -60,6 +60,14 @@
         .history-item:hover { background-color: #f8f9fa; border-color: var(--primary); }
         .active-node { background-color: #e1f0fa !important; border: 1px solid var(--primary) !important; font-weight: bold; }
 
+        /* 흑백 기보 배경색 구분 */
+        .white-move { background-color: #ffffff; }
+        .black-move { background-color: #e9ecef; }
+
+        /* 호버 시 색상 자연스럽게 톤다운 */
+        .white-move:hover { background-color: #f8f9fa; }
+        .black-move:hover { background-color: #dee2e6; }
+
         /* 3. 컨트롤 패널 (1.3배 확대) */
         .control-panel { display: flex; flex-direction: column; gap: 20px; width: 380px; }
         .panel-box { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -256,21 +264,21 @@
             if (!playedByWhite) moveNum -= 1;
             var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
 
-            var html = '<div class="history-item" data-id="' + node.id + '" data-fen="' + node.fen + '">' +
+            // 💡 백이 둔 수인지 흑이 둔 수인지에 따라 CSS 클래스 결정
+            var moveClass = playedByWhite ? "white-move" : "black-move";
+
+            // HTML 태그 안에 moveClass 변수를 쏙 집어넣음
+            var html = '<div class="history-item ' + moveClass + '" data-id="' + node.id + '" data-fen="' + node.fen + '">' +
                        '<div>' + sanText + '</div>' +
                        '<div style="color:#d9534f; font-size:0.8em;">' + (node.engineScore || '') + '</div>' +
                        '</div>';
 
             if (node.children.length > 0) {
-                // 💡 1순위: 서브 갈래(Variation)를 먼저 HTML에 붙임! 
-                // 그래야 방금 둔 수 바로 밑에 갈래가 들여쓰기 되어 그려집니다.
                 for (var i = 1; i < node.children.length; i++) {
                     html += '<div class="variation-block">';
                     html += buildTreeHtml(node.children[i]);
                     html += '</div>';
                 }
-                
-                // 💡 2순위: 그 밑에 원래 있던 메인 라인을 쭉 이어서 그려줍니다.
                 html += buildTreeHtml(node.children[0]);
             }
             return html;
@@ -287,6 +295,8 @@
                 }
             }
         }
+
+        
 
         // 특정 수로 점프
         function goToNode(nodeId) {
