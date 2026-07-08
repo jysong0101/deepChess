@@ -17,60 +17,92 @@
 
         body { 
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
-            margin: 30px; 
+            margin: 40px; 
             display: flex; 
-            gap: 20px; 
+            gap: 25px; /* 20px -> 25px 간격 확대 */
             background-color: var(--bg); 
             align-items: flex-start;
+            justify-content: center; /* 전체 화면 중앙 정렬 추가 */
         }
 
-        /* 1. 보드 영역 */
-        #board-wrapper { display: flex; flex-direction: column; gap: 15px; }
-        #myBoard { width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        /* 1. 보드 영역 (1.3배 확대) */
+        #board-wrapper { display: flex; flex-direction: column; gap: 20px; }
+        #myBoard { width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
         
-        .nav-container { display: flex; gap: 8px; width: 400px; }
+        .nav-container { display: flex; gap: 10px; width: 520px; }
         .nav-btn { 
-            flex: 1; padding: 12px; background-color: var(--secondary); color: white; 
+            flex: 1; padding: 15px; background-color: var(--secondary); color: white; 
             border: none; border-radius: 6px; cursor: pointer; transition: 0.2s;
             display: flex; align-items: center; justify-content: center;
         }
         .nav-btn:hover { background-color: #1a252f; transform: translateY(-1px); }
-        .nav-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+        .nav-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
-        /* 2. 기보 히스토리 영역 */
-        #history-wrapper { width: 280px; display: flex; flex-direction: column; }
+        /* 2. 기보 히스토리 영역 (1.3배 확대) */
+        #history-wrapper { width: 360px; display: flex; flex-direction: column; }
         .history-box { 
-            background-color: white; padding: 20px; border-radius: 12px; 
+            background-color: white; padding: 25px; border-radius: 12px; 
             border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            height: 460px;
+            height: 580px; /* 커진 보드 높이에 맞춰 조절 */
         }
         .history-list { 
-            height: calc(100% - 30px); overflow-y: auto; display: flex; flex-direction: column; gap: 5px; 
-            padding-right: 5px; margin-top: 10px;
+            height: calc(100% - 40px); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; 
+            padding-right: 8px; margin-top: 15px;
         }
-        .history-list::-webkit-scrollbar { width: 6px; }
-        .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .history-list::-webkit-scrollbar { width: 8px; }
+        .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
 
         .history-item { 
-            padding: 8px 12px; cursor: pointer; font-size: 0.95em; border-radius: 6px; 
+            padding: 12px 16px; cursor: pointer; font-size: 1.15em; border-radius: 6px; 
             display: flex; justify-content: space-between; align-items: center; 
             border: 1px solid #eee; transition: 0.2s;
         }
         .history-item:hover { background-color: #f8f9fa; border-color: var(--primary); }
         .active-node { background-color: #e1f0fa !important; border: 1px solid var(--primary) !important; font-weight: bold; }
 
-        /* 3. 컨트롤 패널 */
-        .control-panel { display: flex; flex-direction: column; gap: 15px; width: 300px; }
-        .panel-box { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        button { padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        /* 3. 컨트롤 패널 (1.3배 확대) */
+        .control-panel { display: flex; flex-direction: column; gap: 20px; width: 380px; }
+        .panel-box { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        button { padding: 15px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.05em; transition: 0.2s; }
         button:hover { filter: brightness(1.1); }
         
         #newGameBtn { background-color: #27ae60; width: 100%; }
         #analyzeBtn { background-color: var(--primary); width: 100%; }
         #analyzeBtn:disabled { background-color: #ccc; cursor: not-allowed; }
         
-        .game-result { font-weight: bold; color: #27ae60; margin-top: 10px; text-align: center; }
-        h4 { margin-top: 0; margin-bottom: 10px; color: #333; }
+        .game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
+        h4 { margin-top: 0; margin-bottom: 15px; color: #333; font-size: 1.2em; }
+
+        /* =========================================
+           📱 반응형 (미디어 쿼리) 설정
+           ========================================= */
+        
+        /* 1. 태블릿 & 작은 모니터 (가로 1350px 이하) */
+        @media (max-width: 1350px) {
+            body { 
+                flex-wrap: wrap; /* 공간이 부족하면 자연스럽게 아래로 줄바꿈 */
+            }
+        }
+
+        /* 2. 스마트폰 (가로 600px 이하) */
+        @media (max-width: 600px) {
+            body { 
+                margin: 15px; 
+                gap: 15px; 
+            }
+            
+            /* 모든 요소를 화면 꽉 차게 100%로 변경 (최대 크기는 520px 유지) */
+            #board-wrapper, .nav-container, #history-wrapper, .control-panel { 
+                width: 100%; 
+                max-width: 520px; 
+                margin: 0 auto;
+            }
+            
+            #myBoard { width: 100%; }
+            
+            /* 모바일 세로 화면을 고려해 기보 창 높이를 조금 줄임 */
+            .history-box { height: 350px; }
+        }
     </style>
 </head>
 <body>
@@ -78,11 +110,15 @@
     <div id="board-wrapper">
         <div id="myBoard"></div>
         <div class="nav-container">
-            <button class="nav-btn" onclick="moveFirst()"><svg viewBox="0 0 24 24"><path d="M19 12L12 19L5 12M19 5L12 12L5 5"/></svg></button>
+            <button class="nav-btn" onclick="moveFirst()"><svg viewBox="0 0 24 24"><path d="M18 18L12 12L18 6M11 18L5 12L11 6"/></svg></button>
             <button class="nav-btn" onclick="movePrev()"><svg viewBox="0 0 24 24"><path d="M15 18L9 12L15 6"/></svg></button>
             <button class="nav-btn" onclick="moveNext()"><svg viewBox="0 0 24 24"><path d="M9 18L15 12L9 6"/></svg></button>
-            <button class="nav-btn" onclick="moveLast()"><svg viewBox="0 0 24 24"><path d="M5 12L12 5L19 12M5 19L12 12L19 19"/></svg></button>
-            <button class="nav-btn" onclick="board.flip()" title="보드 회전">🔄</button>
+            <button class="nav-btn" onclick="moveLast()"><svg viewBox="0 0 24 24"><path d="M6 18L12 12L6 6M13 18L19 12L13 6"/></svg></button>
+            <button class="nav-btn" onclick="board.flip()" title="보드 회전">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 4V20M4 8L8 4L12 8M16 20V4M12 16L16 20L20 16"/>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -130,6 +166,8 @@
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
             onDrop: onDrop
         });
+
+        $(window).resize(board.resize);
 
         // --- 핵심 개선: 자동 스크롤 기능이 포함된 UI 갱신 ---
         function updateUI() {
