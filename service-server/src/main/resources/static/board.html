@@ -22,14 +22,68 @@
             gap: 25px; 
             background-color: var(--bg); 
             align-items: flex-start;
-            justify-content: center; /* 화면 정중앙 정렬 */
+            justify-content: center;
         }
 
-        /* 1. 보드 영역 (1.3배 확대) */
         #board-wrapper { display: flex; flex-direction: column; gap: 20px; }
+        
+        .board-row {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            align-items: stretch; 
+        }
+
         #myBoard { width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
         
-        .nav-container { display: flex; gap: 10px; width: 520px; }
+        /* 🟢 평가치 바 (가로 너비 30px로 확대) */
+        .eval-bar {
+            width: 30px;
+            background-color: #404040; 
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+            flex-shrink: 0;
+        }
+        .eval-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%; 
+            background-color: #f8f9fa; 
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        /* 🟢 평가치 텍스트 디자인 */
+        .eval-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-weight: 800;
+            font-size: 11px;
+            letter-spacing: -0.5px;
+            z-index: 10;
+            left: 0;
+            transition: all 0.3s ease;
+            user-select: none;
+            pointer-events: none;
+        }
+        /* 백이 유리할 땐 아래쪽에 어두운 글씨 */
+        .eval-text.white-adv {
+            bottom: 8px;
+            top: auto;
+            color: #2c3e50; 
+        }
+        /* 흑이 유리할 땐 위쪽에 밝은 글씨 */
+        .eval-text.black-adv {
+            top: 8px;
+            bottom: auto;
+            color: #f8f9fa; 
+        }
+
+        .nav-container { display: flex; gap: 10px; width: 100%; max-width: 565px; } 
         .nav-btn { 
             flex: 1; padding: 15px; background-color: var(--secondary); color: white; 
             border: none; border-radius: 6px; cursor: pointer; transition: 0.2s;
@@ -38,7 +92,6 @@
         .nav-btn:hover { background-color: #1a252f; transform: translateY(-1px); }
         .nav-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
-        /* 2. 기보 히스토리 영역 (1.3배 확대) */
         #history-wrapper { width: 360px; display: flex; flex-direction: column; }
         .history-box { 
             background-color: white; padding: 25px; border-radius: 12px; 
@@ -52,78 +105,26 @@
         .history-list::-webkit-scrollbar { width: 8px; }
         .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
 
+        .white-move { background-color: #ffffff; }
+        .black-move { background-color: #f2f2f2; } 
+        .white-move:hover { background-color: #f8f9fa; }
+        .black-move:hover { background-color: #e5e5e5; }
+
         .history-item { 
             padding: 12px 16px; cursor: pointer; font-size: 1.15em; border-radius: 6px; 
             display: flex; justify-content: space-between; align-items: center; 
             border: 1px solid #eee; transition: 0.2s;
         }
-        .history-item:hover { background-color: #f8f9fa; border-color: var(--primary); }
         .active-node { background-color: #e1f0fa !important; border: 1px solid var(--primary) !important; font-weight: bold; }
 
-        /* 흑백 기보 배경색 구분 */
-        .white-move { background-color: #ffffff; }
-        .black-move { background-color: #e9ecef; }
-
-        /* 호버 시 색상 자연스럽게 톤다운 */
-        .white-move:hover { background-color: #f8f9fa; }
-        .black-move:hover { background-color: #dee2e6; }
-
-        /* 3. 컨트롤 패널 (1.3배 확대) */
-        .control-panel { display: flex; flex-direction: column; gap: 20px; width: 380px; }
-        .panel-box { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        button { padding: 15px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.05em; transition: 0.2s; }
-        button:hover { filter: brightness(1.1); }
-        
-        #newGameBtn { background-color: #27ae60; width: 100%; }
-        #analyzeBtn { background-color: var(--primary); width: 100%; }
-        #analyzeBtn:disabled { background-color: #ccc; cursor: not-allowed; }
-        
-        .game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
-        h4 { margin-top: 0; margin-bottom: 15px; color: #333; font-size: 1.2em; }
-
-        /* 🟢 이동 가능한 칸 표시용 CSS (반투명한 검은 점) */
-        .legal-move {
-            position: relative;
-        }
-        .legal-move::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 30%;
-            height: 30%;
-            background-color: rgba(0, 0, 0, 0.25); 
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none; 
-        }
-
-        /* 📱 반응형 미디어 쿼리 설정 */
-        @media (max-width: 1350px) {
-            body { flex-wrap: wrap; }
-        }
-        @media (max-width: 600px) {
-            body { margin: 15px; gap: 15px; }
-            #board-wrapper, .nav-container, #history-wrapper, .control-panel { 
-                width: 100%; 
-                max-width: 520px; 
-                margin: 0 auto;
-            }
-            #myBoard { width: 100%; }
-            .history-box { height: 350px; }
-        }
-
-        /* 🌳 트리 구조: 서브 갈래(Variation) 디자인 */
         .variation-block {
             margin-left: 25px;
             padding-left: 10px;
-            border-left: 3px solid #bdc3c7; /* 회색 세로선으로 갈래 표시 */
+            border-left: 3px solid #bdc3c7; 
             margin-top: 5px;
             margin-bottom: 5px;
             position: relative;
         }
-        
-        /* 꺾이는 화살표 아이콘 */
         .variation-block::before {
             content: '↳';
             position: absolute;
@@ -132,12 +133,46 @@
             color: #bdc3c7;
             font-weight: bold;
         }
+
+        .control-panel { display: flex; flex-direction: column; gap: 20px; width: 380px; }
+        .panel-box { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        button { padding: 15px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.05em; transition: 0.2s; }
+        button:hover { filter: brightness(1.1); }
+        
+        #newGameBtn { background-color: #27ae60; width: 100%; }
+        
+        .game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
+        h4 { margin-top: 0; margin-bottom: 15px; color: #333; font-size: 1.2em; }
+
+        .legal-move { position: relative; }
+        .legal-move::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 30%; height: 30%; background-color: rgba(0, 0, 0, 0.25); 
+            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; 
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .analyzing-text { color: #f39c12; font-size: 0.85em; animation: pulse 1.5s infinite; }
+
+        @media (max-width: 1350px) { body { flex-wrap: wrap; } }
+        @media (max-width: 600px) {
+            body { margin: 15px; gap: 15px; }
+            #board-wrapper, .nav-container, #history-wrapper, .control-panel { width: 100%; max-width: 565px; margin: 0 auto; }
+            #myBoard { width: calc(100% - 45px); } 
+            .history-box { height: 350px; }
+        }
     </style>
 </head>
 <body>
 
     <div id="board-wrapper">
-        <div id="myBoard"></div>
+        <div class="board-row">
+            <div class="eval-bar" title="엔진 평가치">
+                <div id="evalFill" class="eval-fill"></div>
+                <div id="evalText" class="eval-text white-adv">0.0</div>
+            </div>
+            <div id="myBoard"></div>
+        </div>
         <div class="nav-container">
             <button class="nav-btn" onclick="moveFirst()"><svg viewBox="0 0 24 24"><path d="M18 18L12 12L18 6M11 18L5 12L11 6"/></svg></button>
             <button class="nav-btn" onclick="movePrev()"><svg viewBox="0 0 24 24"><path d="M15 18L9 12L15 6"/></svg></button>
@@ -165,11 +200,9 @@
             <button id="importBtn" style="background-color: #f39c12; width: 100%;">적용 및 저장</button>
         </div>
         
-        <button id="analyzeBtn" disabled>현재 국면 분석하기</button>
-        
         <div class="panel-box">
-            <h4>분석 결과</h4>
-            <div id="result" style="color: #666; font-size: 0.9em;">대기 중...</div>
+            <h4>게임 정보</h4>
+            <div id="result" style="color: #666; font-size: 0.9em;">준비 완료.</div>
             <div id="gameResult" class="game-result"></div>
         </div>
     </div>
@@ -179,17 +212,17 @@
         var board = null;
         var currentGameId = null;
 
-        // 🌳 [트리 구조 상태 관리]
         var treeNodes = {};
         var rootNodeId = null;
         var currentNodeId = null;
         var tempIdCounter = 0;
-        var initialGameFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // 게임 시작 상태
+        var initialGameFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
 
-        // 1. 점 지우기 및 드래그 이벤트
-        function removeLegalMoves() {
-            $('#myBoard .square-55d63').removeClass('legal-move');
-        }
+        var analysisQueue = [];
+        var isAnalyzing = false;
+
+        function removeLegalMoves() { $('#myBoard .square-55d63').removeClass('legal-move'); }
+        
         var onDragStart = function(source, piece, position, orientation) {
             if (game.game_over()) return false;
             var moves = game.moves({ square: source, verbose: true });
@@ -197,7 +230,6 @@
             moves.forEach(function(move) { $('#myBoard .square-' + move.to).addClass('legal-move'); });
         };
 
-        // 2. 말 내려놓을 때 (트리 노드 추가 및 분기 생성)
         var onDrop = function(source, target) {
             removeLegalMoves();
             if (!currentGameId) return 'snapback';
@@ -207,12 +239,15 @@
 
             tempIdCounter++;
             var newNodeId = "temp_" + tempIdCounter;
+            
             var newNode = {
                 id: newNodeId,
+                dbId: null, 
                 fen: game.fen(),
                 moveSan: move.san,
                 parentId: currentNodeId,
-                children: []
+                children: [],
+                engineScore: 'analyzing'
             };
             
             treeNodes[newNodeId] = newNode;
@@ -221,7 +256,7 @@
                 var existingChildId = treeNodes[currentNodeId].children.find(childId => treeNodes[childId].moveSan === move.san);
                 if (existingChildId) {
                     currentNodeId = existingChildId;
-                    updateUI();
+                    updateUI(true); 
                     return;
                 } else {
                     treeNodes[currentNodeId].children.push(newNodeId);
@@ -231,8 +266,67 @@
             }
 
             currentNodeId = newNodeId;
-            renderTree();
+            renderTree(); 
+
+            analysisQueue.push({
+                nodeId: newNodeId,
+                fen: newNode.fen,
+                moveSan: newNode.moveSan,
+                parentId: newNode.parentId
+            });
+            processAnalysisQueue(); 
         };
+
+        function processAnalysisQueue() {
+            if (isAnalyzing || analysisQueue.length === 0) return;
+            isAnalyzing = true;
+
+            var task = analysisQueue[0];
+            var ajaxData = {
+                gameId: currentGameId,
+                fen: task.fen,
+                moveSan: task.moveSan,
+                depth: 18 
+            };
+
+            if (task.parentId) {
+                var parentNode = treeNodes[task.parentId];
+                if (!parentNode.dbId) {
+                    isAnalyzing = false;
+                    setTimeout(processAnalysisQueue, 200);
+                    return;
+                }
+                ajaxData.parentPositionId = parentNode.dbId;
+            }
+
+            $.ajax({
+                url: '/api/analysis',
+                method: 'POST',
+                data: ajaxData,
+                success: function(res) {
+                    var node = treeNodes[task.nodeId];
+                    if(node) {
+                        node.dbId = res.positionId; 
+                        node.engineScore = res.engineScore;
+                        
+                        var scoreHtml = '<span style="color:#d9534f; font-weight:bold;">' + res.engineScore + '</span>';
+                        $('.history-item[data-id="' + task.nodeId + '"] .score-box').html(scoreHtml);
+                        
+                        if (currentNodeId === task.nodeId) {
+                            updateEvalBar(res.engineScore);
+                        }
+                    }
+                    analysisQueue.shift(); 
+                    isAnalyzing = false;
+                    processAnalysisQueue(); 
+                },
+                error: function() {
+                    console.error("분석 실패, 재시도합니다.");
+                    isAnalyzing = false;
+                    setTimeout(processAnalysisQueue, 1000);
+                }
+            });
+        }
 
         var onSnapEnd = function() { board.position(game.fen()); };
         var onSnapbackEnd = function(piece, square, position, orientation) { removeLegalMoves(); };
@@ -245,13 +339,54 @@
         });
         $(window).resize(board.resize);
 
-        // 3. 🌳 트리를 HTML로 렌더링 (턴 번호 계산 복구!)
+        // 🟢 평가치 바 및 텍스트 적용 로직 (시그모이드 + 메이트 연동)
+        function updateEvalBar(scoreStr) {
+            if (!scoreStr || scoreStr === 'analyzing') return;
+
+            var fillPercent = 50; 
+            var isWhiteAdv = true;
+            var displayStr = scoreStr;
+
+            if (scoreStr.includes('M') && !scoreStr.includes('-M')) {
+                fillPercent = 100;
+                isWhiteAdv = true;
+            } else if (scoreStr.includes('-M')) {
+                fillPercent = 0;
+                isWhiteAdv = false;
+            } else {
+                var score = parseFloat(scoreStr);
+                if (!isNaN(score)) {
+                    var sigmoid = 1 / (1 + Math.exp(-0.3 * score));
+                    fillPercent = sigmoid * 100;
+                    fillPercent = Math.max(5, Math.min(95, fillPercent));
+                    
+                    isWhiteAdv = score >= 0;
+                    // + 점수일 때 UI의 직관성을 위해 + 기호 추가
+                    if (score > 0 && !displayStr.startsWith('+')) {
+                        displayStr = '+' + displayStr;
+                    }
+                }
+            }
+
+            // 막대 높이 애니메이션 적용
+            $('#evalFill').css('height', fillPercent + '%');
+            
+            // 텍스트 내용 및 위치 업데이트
+            var $evalText = $('#evalText');
+            $evalText.text(displayStr);
+            if (isWhiteAdv) {
+                $evalText.removeClass('black-adv').addClass('white-adv');
+            } else {
+                $evalText.removeClass('white-adv').addClass('black-adv');
+            }
+        }
+
         function renderTree() {
             $('#historyList').empty();
             if (!rootNodeId) return;
             var html = buildTreeHtml(rootNodeId);
             $('#historyList').html(html);
-            updateUI();
+            updateUI(true); 
         }
 
         function buildTreeHtml(nodeId) {
@@ -262,15 +397,17 @@
             var moveNum = parseInt(fenParts[5], 10);
             var playedByWhite = (fenParts[1] === 'b');
             if (!playedByWhite) moveNum -= 1;
+            
             var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
-
-            // 💡 백이 둔 수인지 흑이 둔 수인지에 따라 CSS 클래스 결정
             var moveClass = playedByWhite ? "white-move" : "black-move";
+            
+            var scoreHtml = node.engineScore === 'analyzing' 
+                ? '<span class="analyzing-text">분석 중...</span>' 
+                : '<span style="color:#d9534f; font-weight:bold;">' + (node.engineScore || '') + '</span>';
 
-            // HTML 태그 안에 moveClass 변수를 쏙 집어넣음
             var html = '<div class="history-item ' + moveClass + '" data-id="' + node.id + '" data-fen="' + node.fen + '">' +
                        '<div>' + sanText + '</div>' +
-                       '<div style="color:#d9534f; font-size:0.8em;">' + (node.engineScore || '') + '</div>' +
+                       '<div class="score-box">' + scoreHtml + '</div>' +
                        '</div>';
 
             if (node.children.length > 0) {
@@ -284,72 +421,54 @@
             return html;
         }
 
-        // 4. UI 갱신 및 내비게이션 기능 (트리 구조에 맞게 전면 개편)
-        function updateUI() {
+        function updateUI(shouldScroll) {
             $('.history-item').removeClass('active-node');
             if (currentNodeId) {
                 var activeEl = $(`.history-item[data-id="${currentNodeId}"]`);
                 activeEl.addClass('active-node');
-                if (activeEl.length > 0) {
+                if (shouldScroll && activeEl.length > 0) {
                     activeEl[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
+                var nodeScore = treeNodes[currentNodeId].engineScore;
+                updateEvalBar(nodeScore);
+            } else {
+                updateEvalBar("0.0"); 
             }
         }
 
-        
-
-        // 특정 수로 점프
         function goToNode(nodeId) {
             currentNodeId = nodeId;
             var node = treeNodes[nodeId];
             game.load(node.fen);
             board.position(node.fen);
-            updateUI();
+            updateUI(false); 
         }
 
-        // 마우스 클릭 시 해당 수로 이동
         $(document).on('click', '.history-item', function() {
             var targetIdRaw = $(this).attr('data-id');
             var actualId = isNaN(targetIdRaw) ? targetIdRaw : Number(targetIdRaw);
             goToNode(actualId);
         });
 
-        // 화살표 네비게이션
-        function moveFirst() {
-            currentNodeId = null;
-            game.load(initialGameFen);
-            board.position(initialGameFen);
-            updateUI();
-        }
-
+        function moveFirst() { currentNodeId = null; game.load(initialGameFen); board.position(initialGameFen); updateUI(true); }
         function movePrev() {
             if (!currentNodeId) return;
             var node = treeNodes[currentNodeId];
-            if (node.parentId && treeNodes[node.parentId]) {
-                goToNode(node.parentId);
-            } else {
-                moveFirst();
-            }
+            if (node.parentId && treeNodes[node.parentId]) { goToNode(node.parentId); } else { moveFirst(); }
+            updateUI(true);
         }
-
         function moveNext() {
-            if (!currentNodeId) {
-                if (rootNodeId) goToNode(rootNodeId);
-                return;
-            }
+            if (!currentNodeId) { if (rootNodeId) goToNode(rootNodeId); return; }
             var node = treeNodes[currentNodeId];
-            if (node.children.length > 0) {
-                goToNode(node.children[0]); // 항상 첫 번째 가지(메인 라인)를 따라감
-            }
+            if (node.children.length > 0) { goToNode(node.children[0]); }
+            updateUI(true);
         }
-
         function moveLast() {
             if (!rootNodeId) return;
             var curr = currentNodeId ? currentNodeId : rootNodeId;
-            while(treeNodes[curr] && treeNodes[curr].children.length > 0) {
-                curr = treeNodes[curr].children[0];
-            }
+            while(treeNodes[curr] && treeNodes[curr].children.length > 0) { curr = treeNodes[curr].children[0]; }
             goToNode(curr);
+            updateUI(true);
         }
 
         $(document).keydown(function(e) {
@@ -360,34 +479,46 @@
             if (e.which === 40) moveLast();
         });
 
-        // 5. 서버에서 기보 트리 불러오기 (DB 데이터를 트리로 재조립)
         function loadGameTree() {
             if (!currentGameId) return;
             $.ajax({
                 url: '/api/games/' + currentGameId + '/tree',
                 method: 'GET',
                 success: function(treeData) {
-                    treeNodes = {};
-                    rootNodeId = null;
+                    treeNodes = {}; 
+                    rootNodeId = null; 
                     currentNodeId = null;
+                    analysisQueue = []; 
+                    isAnalyzing = false;
 
-                    // 1. 노드 딕셔너리 생성
                     treeData.forEach(function(node) {
+                        var score = node.engineScore;
+                        var needsAnalysis = !score; 
+
                         treeNodes[node.positionId] = {
                             id: node.positionId,
+                            dbId: node.positionId, 
                             fen: node.fen,
                             moveSan: node.moveSan,
                             parentId: node.parentPositionId,
-                            engineScore: node.engineScore,
+                            engineScore: needsAnalysis ? 'analyzing' : score,
                             children: []
                         };
+
+                        if (needsAnalysis) {
+                            analysisQueue.push({
+                                nodeId: node.positionId,
+                                fen: node.fen,
+                                moveSan: node.moveSan,
+                                parentId: node.parentPositionId
+                            });
+                        }
                     });
 
-                    // 2. 부모-자식 관계 연결
                     treeData.forEach(function(node) {
                         if (node.parentPositionId) {
-                            if (treeNodes[node.parentPositionId]) {
-                                treeNodes[node.parentPositionId].children.push(node.positionId);
+                            if (treeNodes[node.parentPositionId]) { 
+                                treeNodes[node.parentPositionId].children.push(node.positionId); 
                             }
                         } else {
                             if (!rootNodeId) rootNodeId = node.positionId;
@@ -395,7 +526,11 @@
                     });
 
                     renderTree();
-                    moveLast(); // 기보를 다 불러온 후 제일 마지막 수로 시점 이동
+                    moveFirst(); 
+
+                    if (analysisQueue.length > 0) {
+                        processAnalysisQueue();
+                    }
                 }
             });
         }
@@ -408,22 +543,19 @@
                     currentGameId = res.gameId;
                     initialGameFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
                     treeNodes = {}; rootNodeId = null; currentNodeId = null; tempIdCounter = 0;
+                    analysisQueue = []; isAnalyzing = false;
+                    
                     game.reset(); board.start(); 
-                    $('#analyzeBtn').prop('disabled', false);
                     $('#historyList').empty();
                     $('#gameResult').text("");
+                    updateEvalBar("0.0"); 
                 }
             });
         });
 
         function checkResult(pgn) {
             const results = ["1-0", "0-1", "1/2-1/2"];
-            for(let r of results) {
-                if(pgn.includes(" " + r) || pgn.endsWith(r)) {
-                    $('#gameResult').text("결과: " + r);
-                    return;
-                }
-            }
+            for(let r of results) { if(pgn.includes(" " + r) || pgn.endsWith(r)) { $('#gameResult').text("결과: " + r); return; } }
             $('#gameResult').text("");
         }
 
@@ -444,6 +576,8 @@
                 history.forEach(function(move) { tempGame.move(move.san); moveList.push({ fen: tempGame.fen(), moveSan: move.san }); });
             }
             
+            analysisQueue = []; isAnalyzing = false;
+
             $.ajax({
                 url: '/api/games/import',
                 method: 'POST',
@@ -454,8 +588,7 @@
                     currentGameId = res.gameId;
                     board.position(game.fen());
                     $('#result').html('<span style="color: #27ae60;">✅ DB 저장 완료!</span>');
-                    $('#analyzeBtn').prop('disabled', false);
-                    loadGameTree(); // DB에 저장 후, 서버에서 트리를 다시 불러와 렌더링
+                    loadGameTree(); 
                 }
             });
         });
