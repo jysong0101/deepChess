@@ -277,6 +277,7 @@
             processAnalysisQueue(); 
         };
 
+        
         function processAnalysisQueue() {
             if (isAnalyzing || analysisQueue.length === 0) return;
             isAnalyzing = true;
@@ -339,32 +340,47 @@
         });
         $(window).resize(board.resize);
 
-        // 🟢 평가치 바 및 텍스트 적용 로직 (시그모이드 + 메이트 연동)
+        // 🟢 1. 평가치 퍼센트 변환 함수 (시그모이드 + 메이트 예외 처리)
+        function calculateEvalPercentage(scoreStr) {
+            if (!scoreStr) return 50;
+            
+            // 백 메이트 승리 확정 (+M3, M5 등) -> 게이지 100% (빈칸 없음)
+            if (scoreStr.startsWith('+M') || (scoreStr.startsWith('M') && !scoreStr.startsWith('-M'))) {
+                return 100;
+            }
+            // 흑 메이트 승리 확정 (-M2, -M4 등) -> 게이지 0% (완전 비움)
+            if (scoreStr.startsWith('-M')) {
+                return 0;
+            }
+            
+            // 일반 평가치 (+0.28, -1.50 등)
+            var score = parseFloat(scoreStr);
+            if (isNaN(score)) return 50;
+            
+            // 시그모이드 함수 적용 (곡선 형태로 점진적 변화, 원래 쓰시던 0.3 가중치 적용)
+            var sigmoid = 1 / (1 + Math.exp(-0.3 * score));
+            var fillPercent = sigmoid * 100;
+            
+            // 🔴 메이트가 아닌 일반 점수는 최소 5%, 최대 95%까지만 차도록 강제 고정
+            return Math.max(5, Math.min(95, fillPercent));
+        }
+
+        // 🟢 2. 평가치 바 및 텍스트 적용 로직 업데이트
         function updateEvalBar(scoreStr) {
             if (!scoreStr || scoreStr === 'analyzing') return;
 
-            var fillPercent = 50; 
-            var isWhiteAdv = true;
-            var displayStr = scoreStr;
+            // 시그모이드 및 메이트 로직이 적용된 퍼센트 추출
+            var fillPercent = calculateEvalPercentage(scoreStr);
+            
+            // 50% 이상이면 백 유리, 미만이면 흑 유리
+            var isWhiteAdv = fillPercent >= 50;
+            var displayStr = String(scoreStr).trim();
 
-            if (scoreStr.includes('M') && !scoreStr.includes('-M')) {
-                fillPercent = 100;
-                isWhiteAdv = true;
-            } else if (scoreStr.includes('-M')) {
-                fillPercent = 0;
-                isWhiteAdv = false;
-            } else {
-                var score = parseFloat(scoreStr);
-                if (!isNaN(score)) {
-                    var sigmoid = 1 / (1 + Math.exp(-0.3 * score));
-                    fillPercent = sigmoid * 100;
-                    fillPercent = Math.max(5, Math.min(95, fillPercent));
-                    
-                    isWhiteAdv = score >= 0;
-                    // + 점수일 때 UI의 직관성을 위해 + 기호 추가
-                    if (score > 0 && !displayStr.startsWith('+')) {
-                        displayStr = '+' + displayStr;
-                    }
+            // 일반 점수이면서 양수(백 유리)일 때 직관성을 위해 '+' 기호 추가
+            if (!displayStr.includes('M')) {
+                var score = parseFloat(displayStr);
+                if (!isNaN(score) && score > 0 && !displayStr.startsWith('+')) {
+                    displayStr = '+' + displayStr;
                 }
             }
 
@@ -374,6 +390,7 @@
             // 텍스트 내용 및 위치 업데이트
             var $evalText = $('#evalText');
             $evalText.text(displayStr);
+            
             if (isWhiteAdv) {
                 $evalText.removeClass('black-adv').addClass('white-adv');
             } else {
