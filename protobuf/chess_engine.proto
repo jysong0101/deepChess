@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package deepchess;
+
+// Spring Boot(Java) 환경을 위한 옵션 설정
+option java_multiple_files = true;
+option java_package = "com.deepchess.service_server.grpc";
+option java_outer_classname = "ChessEngineProto";
+
+// 1. 서비스 정의 (어떤 기능을 제공할 것인가?)
+service ChessEngine {
+  // 단일 국면 분석 요청 메서드
+  rpc AnalyzePosition (AnalyzeRequest) returns (AnalyzeResponse);
+}
+
+// 2. 요청 메시지 포맷 (Spring Boot -> Python)
+message AnalyzeRequest {
+  string fen = 1;      // 체스 현재 국면 (FEN 스트링)
+  int32 depth = 2;     // 엔진 탐색 깊이
+}
+
+// 3. 응답 메시지 포맷 (Python -> Spring Boot)
+message AnalyzeResponse {
+  string best_move = 1;    // 엔진이 추천하는 최선의 수 (UCI 포맷, 예: "e2e4")
+  string engine_score = 2; // 엔진 평가 점수 (예: "+0.28", "M3")
+  string detail_json = 3;  // 추가 정보 (탐색 노드 수, 진행 시간 등을 담은 JSON 스트링)
+}

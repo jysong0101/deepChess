@@ -1,30 +1,41 @@
-# 베이스 이미지 선택 (Ubuntu 22.04 사용)
-FROM ubuntu:22.04
+# 1. 베이스 이미지 선택 (Python이 기본 설치된 경량 이미지)
+FROM python:3.10-slim
 
-# 필수 패키지 설치
+# 2. Stockfish 컴파일에 필요한 OS 패키지 설치
 RUN apt-get update && apt-get install -y \
     g++ \
     make \
-    cmake \
     git \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# 작업 디렉토리 설정
 WORKDIR /app
 
-# Stockfish 소스 코드 클론
-RUN git clone https://github.com/official-stockfish/Stockfish.git
+# 3. Stockfish 소스 코드 클론 및 컴파일
+# 컴파일 완료 후 실행 파일만 /app으로 빼내고 소스 폴더는 지워서 이미지 용량을 줄입니다.
+RUN git clone https://github.com/official-stockfish/Stockfish.git \
+    && cd Stockfish/src \
+    && make -j$(nproc) build ARCH=x86-64-sse41-popcnt \
+    && cp stockfish /app/stockfish \
+    && chmod +x /app/stockfish \
+    && cd /app \
+    && rm -rf Stockfish
 
-# Stockfish 컴파일
-WORKDIR /app/Stockfish/src
-RUN make -j$(nproc) build ARCH=x86-64-sse41-popcnt
 
-# 실행 파일 복사
-RUN cp stockfish /app/stockfish
+# 4. Python 패키지 설치 (grpcio, grpcio-tools, chess)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 실행 가능하도록 권한 추가
-RUN chmod +x /app/stockfish
+# 5. gRPC 프로토콜 파일과 서버 코드 복사
+COPY chess_engine.proto .
+COPY server.py .
 
-# 실행 파일을 컨테이너 내에서 실행
-CMD ["/app/stockfish"]
+# 6. .proto 파일을 파이썬 코드로 자동 컴파일 (매우 중요!)
+# 이 명령어가 chess_engine_pb2.py 와 chess_engine_pb2_grpc.py 를 생성합니다.
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chess_engine.proto
+
+# 7. 통신 포트 노출
+EXPOSE 50051
+
+# 8. 컨테이너 시작 시 파이썬 gRPC 서버 실행
+CMD ["python", "server.py"]
