@@ -55,6 +55,30 @@
             background-color: #f8f9fa; 
             transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
         }
+        .eval-badge {
+            display: inline-block;
+            min-width: 48px; /* 10.00 이나 -M10 도 넉넉히 들어가는 고정 최소 너비 */
+            padding: 4px 8px;
+            border-radius: 6px; /* 끝이 뭉특한 둥근 모서리 */
+            font-size: 0.9em;
+            font-weight: bold;
+            text-align: center;
+            font-family: 'Consolas', monospace; /* 숫자가 삐뚤어지지 않게 고정폭 폰트 적용 */
+        }
+
+        /* 백 유리 (+) : 흰 바탕, 검은 글씨, 얇은 회색 테두리 */
+        .eval-badge.white-adv {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #ced4da;
+        }
+
+        /* 흑 유리 (-) : 검은 바탕, 흰 글씨 */
+        .eval-badge.black-adv {
+            background-color: #343a40;
+            color: #f8f9fa;
+            border: 1px solid #343a40;
+        }
 
         /* 🟢 평가치 텍스트 디자인 */
         .eval-text {
@@ -98,12 +122,41 @@
             border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             height: 580px; 
         }
+        /* 📜 기보 히스토리 (턴 단위 표 스타일) */
         .history-list { 
-            height: calc(100% - 40px); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; 
-            padding-right: 8px; margin-top: 15px;
+            font-size: 1.1em; 
+            color: #2c3e50; 
+            padding-right: 8px; 
+            margin-top: 15px;
+            height: calc(100% - 40px); 
+            overflow-y: auto; 
         }
         .history-list::-webkit-scrollbar { width: 8px; }
         .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+        /* 개별 수 클릭 버튼 */
+        .move-clickable {
+            flex: 1;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.1s, color 0.1s;
+        }
+        .move-clickable:hover { background-color: #e2e8f0; }
+
+        /* 하나의 턴(1. e4 e5)을 감싸는 행 */
+        .turn-row {
+            display: flex;
+            padding: 6px 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .turn-row:nth-child(even) { background-color: #f8f9fa; }
+        
+        /* 턴 번호 (예: 1.) */
+        .turn-num { width: 45px; color: #888; font-weight: bold; }
+        
+        /* 기보 영역 (백과 흑의 수 공간을 균등하게 분배) */
+        .turn-moves { flex: 1; display: flex; gap: 10px; }
 
         .white-move { background-color: #ffffff; }
         .black-move { background-color: #f2f2f2; } 
@@ -115,15 +168,44 @@
             display: flex; justify-content: space-between; align-items: center; 
             border: 1px solid #eee; transition: 0.2s;
         }
-        .active-node { background-color: #e1f0fa !important; border: 1px solid var(--primary) !important; font-weight: bold; }
+        .active-node { 
+            background-color: #e2e8f0 !important; 
+            color: #0f172a !important; 
+            font-weight: 900 !important; /* 글씨 최대 굵기 */
+            box-shadow: inset 0 0 0 1px #94a3b8; /* 테두리 효과로 구별감 상승 */
+        }
+
+        .variation-container { margin-top: 4px; margin-bottom: 4px; }
+        .accordion-header {
+            cursor: pointer;
+            font-size: 0.85em;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 2px 0;
+            border: 1px solid #e2e8f0;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .accordion-header:hover { background: #e2e8f0; color: #333; }
+        .accordion-content {
+            margin-left: 10px;
+            padding-left: 12px;
+            border-left: 3px solid #cbd5e1;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            background: #fafbfc;
+            border-radius: 0 6px 6px 0;
+        }
 
         .variation-block {
-            margin-left: 25px;
-            padding-left: 10px;
-            border-left: 3px solid #bdc3c7; 
-            margin-top: 5px;
-            margin-bottom: 5px;
-            position: relative;
+            margin-left: 45px;
+            padding: 4px 0;
+            background-color: #fcfcfc;
+            border-left: 3px solid #cbd5e1;
+            font-size: 0.95em;
         }
         .variation-block::before {
             content: '↳';
@@ -192,18 +274,30 @@
     </div>
 
     <div class="control-panel">
-        <button id="newGameBtn" style="display: none;">새 분석 보드 생성</button>
+        <button id="newGameBtn" style="display: none; margin-bottom: -10px;">새 분석 보드 생성</button>
 
-        <div class="panel-box" id="importSection" style="display: none;">
-            <h4 style="color:#f39c12;">📁 기보 불러오기</h4>
-            <input type="text" id="importData" placeholder="FEN 또는 PGN 입력" style="width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            <button id="importBtn" style="background-color: #f39c12; width: 100%;">적용 및 저장</button>
+        <!-- 💡 가로 배치 영역: 기보 불러오기 + 게임 정보 -->
+        <div class="top-controls" style="display: flex; gap: 15px;">
+            <div class="panel-box" id="importSection" style="display: none; flex: 1; padding: 15px;">
+                <h4 style="color:#f39c12; font-size:1em;">📁 기보 불러오기</h4>
+                <input type="text" id="importData" placeholder="FEN 또는 PGN" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button id="importBtn" style="background-color: #f39c12; width: 100%; padding: 10px; font-size: 0.9em;">적용 및 저장</button>
+            </div>
+            
+            <div class="panel-box" id="gameInfoSection" style="flex: 1; padding: 15px;">
+                <h4 style="font-size:1em;">게임 정보</h4>
+                <div id="result" style="color: #666; font-size: 0.85em;">준비 완료.</div>
+                <div id="gameResult" class="game-result" style="font-size: 0.95em; margin-top: 10px;"></div>
+            </div>
         </div>
-        
-        <div class="panel-box">
-            <h4>게임 정보</h4>
-            <div id="result" style="color: #666; font-size: 0.9em;">준비 완료.</div>
-            <div id="gameResult" class="game-result"></div>
+
+        <!-- 💡 새로 추가된 하단 영역: 엔진 추천 수 -->
+        <div class="panel-box" id="recommendSection" style="padding: 15px;">
+            <h4 style="font-size:1em; margin-bottom: 10px; color:#2c3e50;">💡 추천 수 (상위 3개)</h4>
+            <div id="topMovesList" style="display:flex; flex-direction:column; gap:8px;">
+                <!-- JavaScript를 통해 동적으로 렌더링됩니다 -->
+                <div style="color:#888; font-size:0.9em; text-align:center;">기보를 클릭해 분석을 확인하세요.</div>
+            </div>
         </div>
     </div>
 
@@ -247,7 +341,8 @@
                 moveSan: move.san,
                 parentId: currentNodeId,
                 children: [],
-                engineScore: 'analyzing'
+                engineScore: 'analyzing',
+                analysisDetail: null
             };
             
             treeNodes[newNodeId] = newNode;
@@ -309,12 +404,15 @@
                     if(node) {
                         node.dbId = res.positionId; 
                         node.engineScore = res.engineScore;
+                        // 💡 핵심: 서버에서 받아온 상세 데이터(추천 수)를 노드에 저장!
+                        node.analysisDetail = res.analysisDetail; 
                         
                         var scoreHtml = '<span style="color:#d9534f; font-weight:bold;">' + res.engineScore + '</span>';
                         $('.history-item[data-id="' + task.nodeId + '"] .score-box').html(scoreHtml);
                         
                         if (currentNodeId === task.nodeId) {
                             updateEvalBar(res.engineScore);
+                            renderTopMoves(res.analysisDetail);
                         }
                     }
                     analysisQueue.shift(); 
@@ -327,6 +425,40 @@
                     setTimeout(processAnalysisQueue, 1000);
                 }
             });
+        }
+
+        // 🟢 다중 추천 수를 화면에 그리는 함수 (뱃지 디자인 적용)
+        function renderTopMoves(detailJsonStr) {
+            var $list = $('#topMovesList');
+            $list.empty();
+
+            if (!detailJsonStr || detailJsonStr === 'analyzing') {
+                $list.html('<div style="color:#f39c12; font-size:0.9em; text-align:center;" class="analyzing-text">엔진 분석 중입니다...</div>');
+                return;
+            }
+
+            try {
+                var detail = JSON.parse(detailJsonStr);
+                if (detail.top_moves && detail.top_moves.length > 0) {
+                    detail.top_moves.forEach(function(move) {
+                        
+                        // 💡 음수(-)인지 판별하여 검정 뱃지 / 흰색 뱃지 클래스 부여
+                        var isBlackAdv = move.score.includes('-');
+                        var badgeClass = isBlackAdv ? 'eval-badge black-adv' : 'eval-badge white-adv';
+                        
+                        var html = '<div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:8px 12px; border-radius:6px; border:1px solid #dee2e6;">' +
+                                   '<span style="font-weight:bold; font-size:1.05em; color:#2c3e50;">' + move.rank + '. ' + move.san + '</span>' +
+                                   // 💡 span 태그에 뱃지 클래스 적용
+                                   '<span class="' + badgeClass + '">' + move.score + '</span>' +
+                                   '</div>';
+                        $list.append(html);
+                    });
+                } else {
+                    $list.html('<div style="color:#888; font-size:0.9em; text-align:center;">분석 데이터가 없습니다.</div>');
+                }
+            } catch (e) {
+                $list.html('<div style="color:#888; font-size:0.9em; text-align:center;">데이터를 불러올 수 없습니다.</div>');
+            }
         }
 
         var onSnapEnd = function() { board.position(game.fen()); };
@@ -398,60 +530,127 @@
             }
         }
 
+        // 🟢 트리를 처음 그리는 함수
         function renderTree() {
             $('#historyList').empty();
             if (!rootNodeId) return;
-            var html = buildTreeHtml(rootNodeId);
+            var html = buildTableHtml(rootNodeId);
             $('#historyList').html(html);
             updateUI(true); 
         }
 
-        function buildTreeHtml(nodeId) {
-            var node = treeNodes[nodeId];
-            if (!node) return "";
+        // 🟢 표(Table) 형태로 기보를 렌더링하는 재귀 함수
+        function buildTableHtml(startNodeId) {
+            var html = '';
+            var currId = startNodeId;
+            var inRow = false;
 
-            var fenParts = node.fen.split(' ');
-            var moveNum = parseInt(fenParts[5], 10);
-            var playedByWhite = (fenParts[1] === 'b');
-            if (!playedByWhite) moveNum -= 1;
-            
-            var sanText = (playedByWhite ? moveNum + ". " : moveNum + "... ") + "<strong>" + node.moveSan + "</strong>";
-            var moveClass = playedByWhite ? "white-move" : "black-move";
-            
-            var scoreHtml = node.engineScore === 'analyzing' 
-                ? '<span class="analyzing-text">분석 중...</span>' 
-                : '<span style="color:#d9534f; font-weight:bold;">' + (node.engineScore || '') + '</span>';
+            while (currId) {
+                var node = treeNodes[currId];
+                if (!node) break;
 
-            var html = '<div class="history-item ' + moveClass + '" data-id="' + node.id + '" data-fen="' + node.fen + '">' +
-                       '<div>' + sanText + '</div>' +
-                       '<div class="score-box">' + scoreHtml + '</div>' +
-                       '</div>';
+                var fenParts = node.fen.split(' ');
+                var isBlack = (fenParts[1] === 'w'); // 방금 둔 수가 흑이면 다음 턴은 'w'
+                var moveNum = parseInt(fenParts[5], 10);
+                if (isBlack) moveNum -= 1;
 
-            if (node.children.length > 0) {
-                for (var i = 1; i < node.children.length; i++) {
-                    html += '<div class="variation-block">';
-                    html += buildTreeHtml(node.children[i]);
-                    html += '</div>';
+                if (!isBlack) {
+                    // 백의 수: 새로운 행(Row) 시작
+                    html += '<div class="turn-row">';
+                    html += '<div class="turn-num">' + moveNum + '.</div>';
+                    html += '<div class="turn-moves">';
+                    html += '<div class="move-clickable" data-id="' + node.id + '">' + node.moveSan + '</div>';
+                    inRow = true;
+                } else {
+                    // 흑의 수: 기존 행에 덧붙이기
+                    if (!inRow) {
+                        // 서브 라인이 흑의 수부터 시작된 경우 행을 강제로 새로 염
+                        html += '<div class="turn-row">';
+                        html += '<div class="turn-num">' + moveNum + '...</div>';
+                        html += '<div class="turn-moves">';
+                        html += '<div style="flex:1;"></div>'; // 백의 수 자리를 비워둠
+                        inRow = true;
+                    }
+                    html += '<div class="move-clickable" data-id="' + node.id + '">' + node.moveSan + '</div>';
                 }
-                html += buildTreeHtml(node.children[0]);
+
+                // 현재 수에 다른 갈래(분기)가 있는지 체크
+                var hasVariations = node.children.length > 1;
+                
+                // 줄을 닫아야 하는 조건: 흑의 수이거나, 다음 수가 없거나, 다른 갈래가 파생될 때
+                if (isBlack || node.children.length === 0 || hasVariations) {
+                    if (inRow && !isBlack) {
+                         html += '<div style="flex:1;"></div>'; // 백의 수만 두고 끝났을 때 흑의 자리 보정
+                    }
+                    if (inRow) {
+                        html += '</div></div>'; // turn-moves와 turn-row 닫기
+                        inRow = false;
+                    }
+                }
+
+                // 💡 분기가 있을 경우 들여쓰기 블록을 재귀적으로 렌더링
+                if (hasVariations) {
+                    for (var i = 1; i < node.children.length; i++) {
+                        html += '<div class="variation-block">';
+                        html += buildTableHtml(node.children[i]);
+                        html += '</div>';
+                    }
+                }
+
+                // 메인 라인으로 계속 진행
+                if (node.children.length > 0) {
+                    currId = node.children[0];
+                } else {
+                    currId = null;
+                }
             }
+            
             return html;
         }
 
+
+        // 🟢 기존 이벤트 제거 및 클릭 이벤트 재등록
+        $(document).off('click', '.history-item'); 
+        $(document).off('click', '.move-clickable'); 
+        $(document).on('click', '.move-clickable', function() {
+            var targetIdRaw = $(this).attr('data-id');
+            var actualId = isNaN(targetIdRaw) ? targetIdRaw : Number(targetIdRaw);
+            goToNode(actualId);
+        });
+
+        // 🟢 UI 업데이트 함수 (최신화 완료 버전)
         function updateUI(shouldScroll) {
-            $('.history-item').removeClass('active-node');
+            // 옛날 .history-item이 아닌 .move-clickable을 조작합니다.
+            $('.move-clickable').removeClass('active-node');
+            
             if (currentNodeId) {
-                var activeEl = $(`.history-item[data-id="${currentNodeId}"]`);
+                var activeEl = $(`.move-clickable[data-id="${currentNodeId}"]`);
                 activeEl.addClass('active-node');
+                
+                // 만약 숨겨진 아코디언 내부의 기보라면 자동으로 펼치기
+                var parentAccordion = activeEl.parents('.accordion-content');
+                if (parentAccordion.length > 0 && !parentAccordion.is(':visible')) {
+                    parentAccordion.show();
+                    parentAccordion.prev('.accordion-header').find('.toggle-icon').text('[-]');
+                }
+
                 if (shouldScroll && activeEl.length > 0) {
                     activeEl[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-                var nodeScore = treeNodes[currentNodeId].engineScore;
-                updateEvalBar(nodeScore);
+                
+                // 현재 노드의 평가치 및 추천 수 화면에 렌더링
+                var node = treeNodes[currentNodeId];
+                if(node) {
+                    updateEvalBar(node.engineScore);
+                    renderTopMoves(node.analysisDetail); 
+                }
             } else {
-                updateEvalBar("0.0"); 
+                updateEvalBar("0.0");
+                renderTopMoves(null);
             }
         }
+
+        
 
         function goToNode(nodeId) {
             currentNodeId = nodeId;
@@ -519,6 +718,7 @@
                             moveSan: node.moveSan,
                             parentId: node.parentPositionId,
                             engineScore: needsAnalysis ? 'analyzing' : score,
+                            analysisDetail: node.analysisDetail, // 💡 DB에 저장된 추천수 맵핑!
                             children: []
                         };
 

@@ -113,10 +113,14 @@ public class GameController {
             analysisRepository.findById(pos.getPositionId()).ifPresent(analysis -> {
                 node.put("engineScore", analysis.getEngineScore());
                 node.put("bestMoveUci", analysis.getBestMoveUci());
+
+                // DB에 저장된 추천 수 JSON 문자열을 프론트로 넘겨줍니다.
+                node.put("analysisDetail", analysis.getAnalysisDetail());
             });
 
             treeData.add(node);
         }
         return treeData;
     }
+    
 }
