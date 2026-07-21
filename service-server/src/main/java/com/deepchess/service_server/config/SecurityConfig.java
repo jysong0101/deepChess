@@ -38,8 +38,12 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                // 💡 수정된 부분: 로그인 성공 시 무조건 메인 화면('/')으로 이동하여 선택창을 띄웁니다.
-                .defaultSuccessUrl("/", true) 
+                .defaultSuccessUrl("/", true) // 로그인 성공 시 메인 화면으로 리다이렉트
+            ) // <-- 여기에 있던 세미콜론(;)을 지우거나 다음 줄로 연결합니다.
+            
+            // 💡 추가된 부분: 로그아웃 성공 시 기본 페이지 대신 메인 화면("/")으로 직행하도록 설정
+            .logout(logout -> logout
+                .logoutSuccessUrl("/")
             );
 
         return http.build();
