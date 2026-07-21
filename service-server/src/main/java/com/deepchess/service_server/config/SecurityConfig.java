@@ -38,8 +38,8 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                //.defaultSuccessUrl("/", true) // 로그인 성공 시 메인 화면으로 리다이렉트
-                .defaultSuccessUrl("/board.html", true)
+                // 💡 수정된 부분: 로그인 성공 시 무조건 메인 화면('/')으로 이동하여 선택창을 띄웁니다.
+                .defaultSuccessUrl("/", true) 
             );
 
         return http.build();
