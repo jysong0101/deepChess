@@ -22,13 +22,15 @@ public class AnalysisController {
     public Map<String, Object> postAnalysis(
             @AuthenticationPrincipal OAuth2User oAuth2User,
             @RequestParam("gameId") Long gameId,
+            @RequestParam(value = "positionId", required = false) Long positionId, // 💡 새로 추가됨!
             @RequestParam(value = "parentPositionId", required = false) Long parentPositionId,
             @RequestParam(value = "fen") String fen,
-            @RequestParam(value = "moveSan", required = false) String moveSan, // ⬅️ 추가
+            @RequestParam(value = "moveSan", required = false) String moveSan,
             @RequestParam(value = "depth", defaultValue = "20") int depth) {
         
         if (oAuth2User == null) return Map.of("error", "로그인이 필요합니다.");
-        // 서비스 호출 시 moveSan 넘겨주기
-        return analysisRecordService.analyzeAndSave(gameId, parentPositionId, fen, moveSan, depth);
+        
+        // 💡 positionId도 서비스로 넘겨줍니다.
+        return analysisRecordService.analyzeAndSave(gameId, positionId, parentPositionId, fen, moveSan, depth);
     }
 }

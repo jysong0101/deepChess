@@ -1,8 +1,8 @@
 package com.deepchess.service_server.service;
 
-import com.deepchess.service_server.entity.User;
-import com.deepchess.service_server.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.Collections;
+import java.util.Map;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -12,8 +12,11 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Map;
+import com.deepchess.service_server.entity.User;
+import com.deepchess.service_server.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+// ... 상단 import 생략 ...
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +29,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        // 구글이 보낸 사용자 정보 원본 추출
         Map<String, Object> attributes = oAuth2User.getAttributes();
         
-        // 구글의 고유 식별자, 이메일, 이름, 프로필 사진 획득
         String googleUid = (String) attributes.get("sub");
         String email = (String) attributes.get("email");
         String nickname = (String) attributes.get("name");
@@ -43,6 +44,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                                 .googleUid(googleUid)
                                 .nickname(nickname)
                                 .profileImage(profileImage)
+                                .isProfileSet(false) // 💡 신규 유저는 프로필 설정 '미완료' 상태로 생성
                                 .build()
                 ));
 

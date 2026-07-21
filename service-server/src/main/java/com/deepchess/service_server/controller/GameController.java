@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,6 +43,7 @@ public class GameController {
         Game game = Game.builder()
                 .user(user)
                 .fenContent("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+                .isSaved(false) // 💡 새 게임은 무조건 임시(Draft) 상태로 시작
                 .build();
         game = gameRepository.save(game);
         
@@ -67,6 +69,7 @@ public class GameController {
                 .user(user)
                 .fenContent(initialFen)
                 .pgnContent(pgnContent)
+                .isSaved(false) // 💡 불러온 기보도 우선은 임시 상태로 시작
                 .build();
         game = gameRepository.save(game);
 
@@ -122,5 +125,41 @@ public class GameController {
         }
         return treeData;
     }
+    
+    // 💡 추가됨: 분석을 즐기다가 유저가 명시적으로 '저장'을 눌렀을 때 호출되는 API
+    @PutMapping("/api/games/{gameId}/save")
+    public Map<String, Object> saveGameToLibrary(@AuthenticationPrincipal OAuth2User oAuth2User, @PathVariable Long gameId) {
+        if (oAuth2User == null) return Map.of("error", "로그인이 필요합니다.");
+        
+        Game game = gameRepository.findById(gameId).orElseThrow(() -> new IllegalArgumentException("게임을 찾을 수 없습니다."));
+        game.markAsSaved();
+        gameRepository.save(game);
+        
+        return Map.of("message", "보관함에 정식으로 저장되었습니다!");
+    }
+
+    // 💡 추가됨: 내 보관함 기보 목록 조회 API
+    @GetMapping("/api/games/my")
+    public List<Map<String, Object>> getMySavedGames(@AuthenticationPrincipal OAuth2User oAuth2User) {
+        if (oAuth2User == null) throw new IllegalArgumentException("로그인이 필요합니다.");
+        
+        String googleUid = oAuth2User.getAttribute("sub");
+        User user = userRepository.findByGoogleUid(googleUid)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        List<Game> savedGames = gameRepository.findByUserAndIsSavedTrueOrderByCreatedAtDesc(user);
+        List<Map<String, Object>> response = new ArrayList<>();
+        
+        for (Game game : savedGames) {
+            Map<String, Object> gameData = new HashMap<>();
+            gameData.put("gameId", game.getGameId());
+            gameData.put("createdAt", game.getCreatedAt().toString());
+            // 목록에서 간단히 보여줄 PGN 또는 초기 FEN 정보
+            gameData.put("preview", game.getPgnContent() != null ? game.getPgnContent() : game.getFenContent());
+            response.add(gameData);
+        }
+        return response;
+    }
+
     
 }

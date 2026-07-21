@@ -23,41 +23,46 @@ public class AnalysisRecordService {
     private final AnalysisRepository analysisRepository;
     private final ChessEngineService chessEngineService;
 
-    @Transactional
-    public Map<String, Object> analyzeAndSave(Long gameId, Long parentPositionId, String fen, String moveSan, int depth) {        
-        // 1. 기존에 만들어둔 게임(Game) 찾기
+    @Transactional // 💡 파라미터에 positionId 가 추가되었습니다.
+    public Map<String, Object> analyzeAndSave(Long gameId, Long positionId, Long parentPositionId, String fen, String moveSan, int depth) {        
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new IllegalArgumentException("게임을 찾을 수 없습니다."));
 
-        // 2. 엔진 분석 수행
         Map<String, Object> result = chessEngineService.analyzePosition(fen, depth);
 
-        // 3. 부모 국면 찾기 (첫 수라면 null일 수 있음)
-        Position parentPosition = null;
-        if (parentPositionId != null) {
-            parentPosition = positionRepository.findById(parentPositionId).orElse(null);
+        Position position;
+        // 💡 1. 기보 불러오기로 이미 DB에 존재하는 수라면? -> 복제하지 않고 찾아온다!
+        if (positionId != null) {
+            position = positionRepository.findById(positionId).orElseThrow();
+        } 
+        // 💡 2. 유저가 보드판에서 새로 둔 수라면? -> 새로 생성한다!
+        else {
+            Position parentPosition = null;
+            if (parentPositionId != null) {
+                parentPosition = positionRepository.findById(parentPositionId).orElse(null);
+            }
+            position = Position.builder()
+                    .game(game)
+                    .fen(fen)
+                    .parentPosition(parentPosition)
+                    .moveSan(moveSan)
+                    .build();
+            position = positionRepository.save(position);
         }
 
-        // 4. 새 국면(Position) 꼬리 물어 저장하기
-        Position position = Position.builder()
-                .game(game)
-                .fen(fen)
-                .parentPosition(parentPosition) // ⬅️ 핵심! 가지치기 트리 구조 연결
-                .moveSan(moveSan)
-                .build();
-        position = positionRepository.save(position);
+        // 💡 3. 분석(Analysis) 데이터도 중복 생성을 막기 위해 확인 후 저장
+        Analysis analysis = analysisRepository.findByPosition_PositionId(position.getPositionId()).orElse(null);
+        if (analysis == null) {
+            analysis = Analysis.builder()
+                    .position(position)
+                    .engineScore((String) result.get("engineScore"))
+                    .bestMoveUci((String) result.get("bestMoveUci"))
+                    .depth(depth)
+                    .analysisDetail((String) result.get("analysisDetail"))
+                    .build();
+            analysisRepository.save(analysis);
+        }
 
-        // 5. 분석(Analysis) 저장
-        Analysis analysis = Analysis.builder()
-                .position(position)
-                .engineScore((String) result.get("engineScore"))
-                .bestMoveUci((String) result.get("bestMoveUci"))
-                .depth(depth)
-                .analysisDetail((String) result.get("analysisDetail"))
-                .build();
-        analysisRepository.save(analysis);
-
-        // 6. 다음 수를 위해 방금 저장한 국면의 ID를 같이 반환
         result.put("positionId", position.getPositionId());
         
         return result;

@@ -34,10 +34,20 @@ public class Game extends BaseEntity {
     @Column(name = "fen_content")
     private String fenContent;
 
+    // 💡 추가됨: 정식 보관함에 저장되었는지 여부
+    @Column(name = "is_saved", nullable = false)
+    private boolean isSaved;
+
     @Builder
-    public Game(User user, String pgnContent, String fenContent) {
+    public Game(User user, String pgnContent, String fenContent, boolean isSaved) {
         this.user = user;
         this.pgnContent = pgnContent;
         this.fenContent = fenContent;
+        this.isSaved = isSaved; // 💡 빌더에 추가
+    }
+
+    // 💡 추가됨: 저장 버튼 클릭 시 상태를 업데이트하는 메서드
+    public void markAsSaved() {
+        this.isSaved = true;
     }
 }

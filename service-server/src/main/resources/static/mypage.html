@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>DeepChess - 내 보관함</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f4f7f6; margin: 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { color: #2c3e50; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { text-decoration: none; color: #3498db; font-size: 0.8em; }
+        .game-item { padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .game-item:hover { background-color: #f8f9fa; border-color: #3498db; transform: translateY(-2px); }
+        .game-date { color: #7f8c8d; font-size: 0.9em; font-weight: bold; }
+        .game-preview { color: #34495e; font-size: 1.1em; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .no-data { text-align: center; color: #7f8c8d; padding: 40px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🗄️ 내 기보 보관함 <a href="/" class="back-btn">⬅️ 메인으로 돌아가기</a></h2>
+        <div id="gameList">
+            <div class="no-data">데이터를 불러오는 중입니다...</div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $.ajax({
+                url: '/api/games/my',
+                method: 'GET',
+                success: function(games) {
+                    var $list = $('#gameList');
+                    $list.empty();
+                    
+                    if (games.length === 0) {
+                        $list.html('<div class="no-data">아직 저장된 기보가 없습니다.</div>');
+                        return;
+                    }
+                    
+                    games.forEach(function(game) {
+                        var dateStr = new Date(game.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+                        var previewStr = game.preview ? game.preview : "시작 국면";
+                        
+                        var itemHtml = '<div class="game-item" onclick="openGame(' + game.gameId + ')">' +
+                                       '<div class="game-preview">♟️ ' + previewStr + '</div>' +
+                                       '<div class="game-date">' + dateStr + '</div>' +
+                                       '</div>';
+                        $list.append(itemHtml);
+                    });
+                }
+            });
+        });
+
+        // 💡 클릭 시 URL에 gameId 파라미터를 달아서 board.html로 이동
+        function openGame(gameId) {
+            window.location.href = '/board.html?gameId=' + gameId;
+        }
+    </script>
+</body>
+</html>

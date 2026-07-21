@@ -278,16 +278,18 @@
 
         <!-- 💡 가로 배치 영역: 기보 불러오기 + 게임 정보 -->
         <div class="top-controls" style="display: flex; gap: 15px;">
-            <div class="panel-box" id="importSection" style="display: none; flex: 1; padding: 15px;">
-                <h4 style="color:#f39c12; font-size:1em;">📁 기보 불러오기</h4>
-                <input type="text" id="importData" placeholder="FEN 또는 PGN" style="width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <button id="importBtn" style="background-color: #f39c12; width: 100%; padding: 10px; font-size: 0.9em;">적용 및 저장</button>
+            <div class="panel-box" id="importSection" style="display: none;">
+                <h4 style="color:#f39c12;">📁 기보 불러오기</h4>
+                <input type="text" id="importData" placeholder="FEN 또는 PGN 입력" style="width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button id="importBtn" style="background-color: #f39c12; width: 100%;">기보 불러오기</button> <!-- 💡 텍스트 변경 -->
             </div>
             
-            <div class="panel-box" id="gameInfoSection" style="flex: 1; padding: 15px;">
-                <h4 style="font-size:1em;">게임 정보</h4>
-                <div id="result" style="color: #666; font-size: 0.85em;">준비 완료.</div>
-                <div id="gameResult" class="game-result" style="font-size: 0.95em; margin-top: 10px;"></div>
+            <div class="panel-box">
+                <h4>게임 정보</h4>
+                <div id="result" style="color: #666; font-size: 0.9em;">준비 완료.</div>
+                <div id="gameResult" class="game-result"></div>
+                <!-- 💡 추가된 기보 저장 버튼 (초기엔 숨겨둠) -->
+                <button id="permanentSaveBtn" style="background-color: #e74c3c; width: 100%; padding: 10px; font-size: 0.9em; display: none; margin-top: 15px; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">💾 기보 저장하기</button>
             </div>
         </div>
 
@@ -378,12 +380,19 @@
             isAnalyzing = true;
 
             var task = analysisQueue[0];
+            var node = treeNodes[task.nodeId]; // 💡 현재 노드 객체 가져오기
+
             var ajaxData = {
                 gameId: currentGameId,
                 fen: task.fen,
                 moveSan: task.moveSan,
                 depth: 18 
             };
+
+            // 💡 핵심: 이미 DB에 저장되어 dbId를 가진 노드라면 서버로 함께 보냄!
+            if (node && node.dbId) {
+                ajaxData.positionId = node.dbId;
+            }
 
             if (task.parentId) {
                 var parentNode = treeNodes[task.parentId];
@@ -404,7 +413,6 @@
                     if(node) {
                         node.dbId = res.positionId; 
                         node.engineScore = res.engineScore;
-                        // 💡 핵심: 서버에서 받아온 상세 데이터(추천 수)를 노드에 저장!
                         node.analysisDetail = res.analysisDetail; 
                         
                         var scoreHtml = '<span style="color:#d9534f; font-weight:bold;">' + res.engineScore + '</span>';
@@ -766,6 +774,9 @@
                     $('#historyList').empty();
                     $('#gameResult').text("");
                     updateEvalBar("0.0"); 
+                    
+                    // 💡 분석이 시작됨과 동시에 저장 버튼 노출
+                    $('#permanentSaveBtn').show().text("💾 기보 저장하기").prop("disabled", false).css("background-color", "#e74c3c");
                 }
             });
         });
@@ -804,17 +815,56 @@
                 success: function(res) {
                     currentGameId = res.gameId;
                     board.position(game.fen());
-                    $('#result').html('<span style="color: #27ae60;">✅ DB 저장 완료!</span>');
+                    $('#result').html('<span style="color: #27ae60;">✅ DB 연동 및 분석 시작!</span>');
                     loadGameTree(); 
+                    
+                    // 💡 기보를 불러와서 분석이 시작됨과 동시에 저장 버튼 노출
+                    $('#permanentSaveBtn').show().text("💾 기보 저장하기").prop("disabled", false).css("background-color", "#e74c3c");
+                }
+            });
+        });
+
+        // 💡 저장 버튼 클릭 이벤트
+        $('#permanentSaveBtn').on('click', function() {
+            if (!currentGameId) return;
+            $.ajax({
+                url: '/api/games/' + currentGameId + '/save',
+                method: 'PUT',
+                success: function(res) {
+                    alert(res.message);
+                    // 저장 완료 후 버튼 상태 변경
+                    $('#permanentSaveBtn').text("✅ 저장 완료").prop("disabled", true).css("background-color", "#95a5a6");
                 }
             });
         });
 
         $(document).ready(function() {
-            var mode = localStorage.getItem("mode");
-            if (mode === "import") { $('#newGameBtn').hide(); $('#importSection').show(); } 
-            else { $('#importSection').hide(); $('#newGameBtn').show(); $('#newGameBtn').click(); }
-            localStorage.removeItem("mode"); 
+            // 💡 URL 파라미터 확인
+            var urlParams = new URLSearchParams(window.location.search);
+            var urlGameId = urlParams.get('gameId');
+
+            if (urlGameId) {
+                // 1) 보관함에서 넘어온 경우: 즉시 해당 기보 트리 로드
+                $('#newGameBtn').hide(); 
+                $('#importSection').hide();
+                currentGameId = urlGameId;
+                $('#result').html('<span style="color: #3498db;">🗄️ 보관함 기보를 불러왔습니다.</span>');
+                // 저장된 기보이므로 저장 버튼은 숨기거나 비활성화
+                $('#permanentSaveBtn').hide(); 
+                loadGameTree();
+            } else {
+                // 2) 메인에서 넘어온 경우 (기존 로직 유지)
+                var mode = localStorage.getItem("mode");
+                if (mode === "import") { 
+                    $('#newGameBtn').hide(); 
+                    $('#importSection').show(); 
+                } else { 
+                    $('#importSection').hide(); 
+                    $('#newGameBtn').show(); 
+                    $('#newGameBtn').click(); 
+                }
+                localStorage.removeItem("mode"); 
+            }
         });
     </script>
 </body>

@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.deepchess.service_server.service.CustomOAuth2UserService;
@@ -17,35 +20,44 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
+    // 💡 추가됨: OAuth2 요청 URL을 커스텀하기 위해 필요한 빈(Bean)
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 테스트 편의를 위해 CSRF 보안 비활성화
             .csrf(AbstractHttpConfigurer::disable)
-            
-            // H2 콘솔이 iframe을 사용하므로 화면이 깨지지 않도록 설정
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-            
-            // 접근 권한 제어
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/h2-console/**", "/login/**", "/error").permitAll() // 누구나 접근 가능
-                .anyRequest().authenticated() // 그 외 모든 요청은 로그인이 필요함
+                .requestMatchers("/", "/h2-console/**", "/login/**", "/error").permitAll()
+                .anyRequest().authenticated()
             )
-            
-            // OAuth2 로그인 기능 활성화 및 서비스 연결
             .oauth2Login(oauth2 -> oauth2
+                // 💡 추가된 부분: 구글 로그인 창으로 넘어갈 때 우리가 만든 커스텀 리졸버를 타도록 설정
+                .authorizationEndpoint(auth -> auth
+                    .authorizationRequestResolver(customAuthorizationRequestResolver())
+                )
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                .defaultSuccessUrl("/", true) // 로그인 성공 시 메인 화면으로 리다이렉트
-            ) // <-- 여기에 있던 세미콜론(;)을 지우거나 다음 줄로 연결합니다.
-            
-            // 💡 추가된 부분: 로그아웃 성공 시 기본 페이지 대신 메인 화면("/")으로 직행하도록 설정
+                .defaultSuccessUrl("/", true)
+            )
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
             );
 
         return http.build();
+    }
+
+    // 💡 계정 선택창을 강제로 띄우기 위한 커스텀 리졸버 메서드
+    private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver() {
+        DefaultOAuth2AuthorizationRequestResolver resolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+
+        // 구글에 요청을 보낼 때 'prompt=select_account' 파라미터를 강제로 끼워 넣습니다.
+        resolver.setAuthorizationRequestCustomizer(customizer ->
+                customizer.additionalParameters(params -> params.put("prompt", "select_account")));
+
+        return resolver;
     }
 }

@@ -1,6 +1,11 @@
 package com.deepchess.service_server.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,11 +34,22 @@ public class User extends BaseEntity {
     @Column(name = "profile_image")
     private String profileImage;
 
+    // 💡 추가: 닉네임 설정 등 초기 프로필 설정이 완료되었는지 확인하는 플래그
+    @Column(name = "is_profile_set", nullable = false)
+    private boolean isProfileSet;
+
     @Builder
-    public User(String email, String googleUid, String nickname, String profileImage) {
+    public User(String email, String googleUid, String nickname, String profileImage, boolean isProfileSet) {
         this.email = email;
         this.googleUid = googleUid;
         this.nickname = nickname;
         this.profileImage = profileImage;
+        this.isProfileSet = isProfileSet;
+    }
+
+    // 💡 추가: 닉네임을 변경하고 프로필 설정을 완료 처리하는 편의 메서드
+    public void updateNicknameAndCompleteProfile(String newNickname) {
+        this.nickname = newNickname;
+        this.isProfileSet = true;
     }
 }
