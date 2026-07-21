@@ -56,9 +56,20 @@ class ChessEngineServicer(chess_engine_pb2_grpc.ChessEngineServicer):
                         "score": score_str
                     })
 
-            # 최선의 수와 점수는 1순위 데이터로 세팅
-            best_move_uci = top_moves[0]["uci"] if top_moves else ""
-            best_score_str = top_moves[0]["score"] if top_moves else "0.00"
+            # 💡 수정된 부분: top_moves가 없을 때(게임 종료) 체크메이트 여부를 확인합니다.
+            if top_moves:
+                best_move_uci = top_moves[0]["uci"]
+                best_score_str = top_moves[0]["score"]
+            else:
+                best_move_uci = ""
+                # 더 이상 둘 수 있는 수가 없다면 체크메이트인지 검사
+                if board.is_checkmate():
+                    # board.turn이 True(White)면 백이 둘 차례에 진 것 -> 흑 승리(-M0)
+                    # board.turn이 False(Black)면 흑이 둘 차례에 진 것 -> 백 승리(+M0)
+                    best_score_str = "-M0" if board.turn == chess.WHITE else "+M0"
+                else:
+                    # 스테일메이트 등 기타 기물 부족으로 인한 무승부
+                    best_score_str = "0.00"
 
             # 💡 detail_json에 top_moves 리스트를 추가로 말아서 보냅니다.
             detail_dict = {
