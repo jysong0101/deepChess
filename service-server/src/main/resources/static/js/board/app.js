@@ -17,6 +17,7 @@ import { createAnalysisQueue } from "./services/analysis-queue.js";
 import { createBoardStore } from "./state.js";
 import { renderEvaluation, renderRecommendations } from "./ui/analysis-view.js";
 import { clearLegalMoves, showLegalMoves } from "./ui/board-view.js";
+import { createSaveDialog } from "./ui/save-dialog.js";
 import {
     renderGameResult,
     renderResultMessage,
@@ -51,11 +52,51 @@ export function createBoardApp({
         nextButton: document.querySelector("#moveNextBtn"),
         lastButton: document.querySelector("#moveLastBtn"),
         flipButton: document.querySelector("#flipBoardBtn"),
+        saveModal: document.querySelector("#saveGameModal"),
+        saveTitleInput: document.querySelector("#saveGameTitle"),
+        saveModalError: document.querySelector("#saveGameModalError"),
+        cancelSaveButton: document.querySelector("#cancelSaveGameButton"),
+        confirmSaveButton: document.querySelector("#confirmSaveGameButton"),
     };
 
     const store = createBoardStore();
     const game = new ChessConstructor();
     let board;
+
+    const saveDialog = createSaveDialog({
+        saveRequest: saveGame,
+        render: {
+            open(defaultTitle) {
+                elements.saveTitleInput.value = defaultTitle;
+                elements.saveModalError.textContent = "";
+                elements.saveModal.hidden = false;
+                elements.saveTitleInput.select();
+            },
+            close() {
+                elements.saveModal.hidden = true;
+                elements.saveButton.focus();
+            },
+            setSaving(saving) {
+                elements.saveTitleInput.disabled = saving;
+                elements.cancelSaveButton.disabled = saving;
+                elements.confirmSaveButton.disabled = saving;
+                elements.confirmSaveButton.textContent = saving ? "저장 중..." : "보관함에 저장";
+                store.setState({ saveStatus: saving ? "saving" : "ready" });
+                renderSaveButton(elements.saveButton, saving ? "saving" : "ready");
+            },
+            setError(message) {
+                elements.saveModalError.textContent = message;
+            },
+            focusInput() {
+                elements.saveTitleInput.focus();
+            },
+        },
+        onSaved(response) {
+            window.alert(response.message);
+            store.setState({ saveStatus: "saved" });
+            renderSaveButton(elements.saveButton, "saved");
+        },
+    });
 
     const renderCurrentNode = (shouldScroll = false) => {
         const state = store.getState();
@@ -272,23 +313,12 @@ export function createBoardApp({
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         const { gameId } = store.getState();
         if (!gameId) {
             return;
         }
-        store.setState({ saveStatus: "saving" });
-        renderSaveButton(elements.saveButton, "saving");
-        try {
-            const response = await saveGame(gameId);
-            window.alert(response.message);
-            store.setState({ saveStatus: "saved" });
-            renderSaveButton(elements.saveButton, "saved");
-        } catch (error) {
-            store.setState({ saveStatus: "ready", lastError: error });
-            renderSaveButton(elements.saveButton, "ready");
-            renderResultMessage(elements.result, error.message);
-        }
+        saveDialog.open(gameId);
     };
 
     const bindEvents = () => {
@@ -300,6 +330,47 @@ export function createBoardApp({
         elements.newGameButton.addEventListener("click", handleNewGame);
         elements.importButton.addEventListener("click", handleImport);
         elements.saveButton.addEventListener("click", handleSave);
+        elements.cancelSaveButton.addEventListener("click", saveDialog.cancel);
+        elements.confirmSaveButton.addEventListener("click", () =>
+            saveDialog.confirm(elements.saveTitleInput.value));
+        elements.saveTitleInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                saveDialog.confirm(elements.saveTitleInput.value);
+            } else if (event.key === "Escape") {
+                event.preventDefault();
+                saveDialog.cancel();
+            }
+        });
+        elements.saveModal.addEventListener("click", (event) => {
+            if (event.target === elements.saveModal) {
+                saveDialog.cancel();
+            }
+        });
+        elements.saveModal.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                saveDialog.cancel();
+                return;
+            }
+            if (event.key !== "Tab") {
+                return;
+            }
+            const focusable = [
+                elements.saveTitleInput,
+                elements.cancelSaveButton,
+                elements.confirmSaveButton,
+            ].filter((element) => !element.disabled);
+            const first = focusable[0];
+            const last = focusable.at(-1);
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
         elements.history.addEventListener("click", (event) => {
             const move = event.target.closest(".move-clickable");
             if (move) {

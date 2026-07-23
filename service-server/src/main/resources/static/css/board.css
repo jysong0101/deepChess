@@ -158,6 +158,19 @@ button:hover { filter: brightness(1.1); }
 .game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
 #permanentSaveBtn { background-color: #e74c3c; width: 100%; padding: 10px; font-size: 0.9em; display: none; margin-top: 15px; }
 #permanentSaveBtn.is-saved { background-color: #95a5a6; }
+.board-modal-backdrop { position: fixed; inset: 0; z-index: 1000; padding: 20px; background: rgba(15, 23, 42, 0.58); display: grid; place-items: center; }
+.board-modal-backdrop[hidden] { display: none; }
+.board-modal-dialog { width: min(100%, 440px); padding: 24px; border-radius: 12px; background: white; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.24); color: #2c3e50; }
+.board-modal-dialog h3 { margin-top: 0; }
+.board-modal-dialog label { display: block; margin: 18px 0 6px; font-weight: bold; }
+.board-modal-dialog input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font: inherit; }
+.title-limit { margin-top: 5px; color: #7f8c8d; font-size: 0.8rem; }
+.board-modal-error { min-height: 20px; margin-top: 7px; color: #c0392b; font-size: 0.85rem; }
+.board-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.modal-primary-button, .modal-secondary-button { padding: 9px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.modal-primary-button { border: 0; background: #2980b9; color: white; }
+.modal-secondary-button { border: 1px solid #bdc3c7; background: white; color: #34495e; }
+.modal-primary-button:disabled, .modal-secondary-button:disabled { opacity: 0.6; cursor: wait; }
 #recommendSection { padding: 15px; }
 .recommend-title { font-size: 1em; margin-bottom: 10px; color: #2c3e50; }
 #topMovesList { display: flex; flex-direction: column; gap: 8px; }
