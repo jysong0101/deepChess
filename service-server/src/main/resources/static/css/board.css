@@ -1,0 +1,197 @@
+:root {
+    --primary: #3498db;
+    --secondary: #2c3e50;
+    --bg: #f4f7f6;
+    --border: #dee2e6;
+}
+
+body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    margin: 40px;
+    display: flex;
+    gap: 25px;
+    background-color: var(--bg);
+    align-items: flex-start;
+    justify-content: center;
+}
+
+#board-wrapper { display: flex; flex-direction: column; gap: 20px; }
+.board-row { display: flex; flex-direction: row; gap: 15px; align-items: stretch; }
+#myBoard { width: 520px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; }
+
+.eval-bar {
+    width: 30px;
+    background-color: #404040;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+    flex-shrink: 0;
+}
+
+.eval-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background-color: #f8f9fa;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.eval-badge {
+    display: inline-block;
+    min-width: 48px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-align: center;
+    font-family: "Consolas", monospace;
+}
+
+.eval-badge.white-adv { background-color: #fff; color: #333; border: 1px solid #ced4da; }
+.eval-badge.black-adv { background-color: #343a40; color: #f8f9fa; border: 1px solid #343a40; }
+
+.eval-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: -0.5px;
+    z-index: 10;
+    left: 0;
+    transition: all 0.3s ease;
+    user-select: none;
+    pointer-events: none;
+}
+
+.eval-text.white-adv { bottom: 8px; top: auto; color: #2c3e50; }
+.eval-text.black-adv { top: 8px; bottom: auto; color: #f8f9fa; }
+
+.nav-container { display: flex; gap: 10px; width: 100%; max-width: 565px; }
+.nav-btn {
+    flex: 1;
+    padding: 15px;
+    background-color: var(--secondary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-btn:hover { background-color: #1a252f; transform: translateY(-1px); }
+.nav-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+#history-wrapper { width: 360px; display: flex; flex-direction: column; }
+.history-box {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    height: 580px;
+}
+
+.history-list {
+    font-size: 1.1em;
+    color: #2c3e50;
+    padding-right: 8px;
+    margin-top: 15px;
+    height: calc(100% - 40px);
+    overflow-y: auto;
+}
+.history-list::-webkit-scrollbar { width: 8px; }
+.history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+.move-clickable { flex: 1; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.1s, color 0.1s; }
+.move-clickable:hover { background-color: #e2e8f0; }
+.turn-row { display: flex; padding: 6px 12px; border-bottom: 1px solid #f1f5f9; }
+.turn-row:nth-child(even) { background-color: #f8f9fa; }
+.turn-num { width: 45px; color: #888; font-weight: bold; }
+.turn-moves { flex: 1; display: flex; gap: 10px; }
+.empty-move { flex: 1; }
+.active-node {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    font-weight: 900 !important;
+    box-shadow: inset 0 0 0 1px #94a3b8;
+}
+
+.variation-block {
+    position: relative;
+    margin-left: 45px;
+    padding: 4px 0;
+    background-color: #fcfcfc;
+    border-left: 3px solid #cbd5e1;
+    font-size: 0.95em;
+}
+.variation-block::before {
+    content: "↳";
+    position: absolute;
+    left: -18px;
+    top: 10px;
+    color: #bdc3c7;
+    font-weight: bold;
+}
+
+.control-panel { display: flex; flex-direction: column; gap: 20px; width: 380px; }
+.panel-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+button { padding: 15px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.05em; transition: 0.2s; }
+button:hover { filter: brightness(1.1); }
+#newGameBtn { display: none; margin-bottom: -10px; background-color: #27ae60; width: 100%; }
+.top-controls { display: flex; gap: 15px; }
+#importSection { display: none; }
+.import-title { color: #f39c12; }
+#importData { width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+#importBtn { background-color: #f39c12; width: 100%; }
+#result { color: #666; font-size: 0.9em; }
+.game-result { font-weight: bold; color: #27ae60; margin-top: 15px; text-align: center; font-size: 1.1em; }
+#permanentSaveBtn { background-color: #e74c3c; width: 100%; padding: 10px; font-size: 0.9em; display: none; margin-top: 15px; }
+#permanentSaveBtn.is-saved { background-color: #95a5a6; }
+#recommendSection { padding: 15px; }
+.recommend-title { font-size: 1em; margin-bottom: 10px; color: #2c3e50; }
+#topMovesList { display: flex; flex-direction: column; gap: 8px; }
+.recommendation-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; border: 1px solid #dee2e6; }
+.recommendation-move { font-weight: bold; font-size: 1.05em; color: #2c3e50; }
+.empty-message { color: #888; font-size: 0.9em; text-align: center; }
+.success-message { color: #27ae60; }
+.library-message { color: #3498db; }
+h4 { margin-top: 0; margin-bottom: 15px; color: #333; font-size: 1.2em; }
+.legal-move { position: relative; }
+.legal-move::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30%;
+    height: 30%;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+.analyzing-text { color: #f39c12; font-size: 0.85em; text-align: center; animation: pulse 1.5s infinite; }
+
+@media (max-width: 1350px) {
+    body { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+    body { margin: 15px; gap: 15px; }
+    #board-wrapper, .nav-container, #history-wrapper, .control-panel { width: 100%; max-width: 565px; margin: 0 auto; }
+    #myBoard { width: calc(100% - 45px); }
+    .history-box { height: 350px; }
+    .top-controls { flex-direction: column; }
+}

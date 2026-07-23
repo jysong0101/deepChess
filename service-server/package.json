@@ -1,0 +1,8 @@
+{
+  "name": "deepchess-frontend-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:frontend": "node --test src/test/js/*.test.mjs"
+  }
+}
