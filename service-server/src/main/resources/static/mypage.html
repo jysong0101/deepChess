@@ -9,9 +9,41 @@
 <body>
     <div class="container">
         <h2>🗄️ 내 기보 보관함 <a href="/" class="back-btn">⬅️ 메인으로 돌아가기</a></h2>
+        <form id="librarySearch" class="library-toolbar" role="search">
+            <label class="search-field">
+                <span class="sr-only">기보 제목 검색</span>
+                <input id="keywordInput" type="search" maxlength="100" placeholder="기보 제목 검색">
+            </label>
+            <button type="submit" class="secondary-button">검색</button>
+            <button id="clearSearchButton" type="button" class="secondary-button">초기화</button>
+            <label class="sort-field">
+                <span>정렬</span>
+                <select id="sortSelect">
+                    <option value="CREATED_DESC">최신 저장순</option>
+                    <option value="CREATED_ASC">오래된 저장순</option>
+                    <option value="UPDATED_DESC">최근 수정순</option>
+                    <option value="TITLE_ASC">제목 오름차순</option>
+                    <option value="TITLE_DESC">제목 내림차순</option>
+                </select>
+            </label>
+        </form>
+        <div id="listStatus" class="list-status" aria-live="polite"></div>
         <div id="gameList">
             <div class="no-data">데이터를 불러오는 중입니다...</div>
         </div>
+    </div>
+
+    <div id="deleteModal" class="modal-backdrop" hidden>
+        <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDescription">
+            <h3 id="deleteModalTitle">기보 삭제</h3>
+            <p><q id="deleteGameTitle"></q> 기보를 삭제하시겠습니까?</p>
+            <p id="deleteModalDescription" class="danger-description">삭제된 기보와 분석 결과는 복구할 수 없습니다.</p>
+            <div id="deleteModalError" class="modal-error" role="alert"></div>
+            <div class="modal-actions">
+                <button id="cancelDeleteButton" type="button" class="secondary-button">취소</button>
+                <button id="confirmDeleteButton" type="button" class="danger-button">영구 삭제</button>
+            </div>
+        </section>
     </div>
     <script type="module" src="/js/mypage/main.js"></script>
 </body>

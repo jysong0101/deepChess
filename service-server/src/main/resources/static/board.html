@@ -71,6 +71,21 @@
         </div>
     </div>
 
+    <div id="saveGameModal" class="board-modal-backdrop" hidden>
+        <section class="board-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="saveGameModalTitle" aria-describedby="saveGameModalDescription">
+            <h3 id="saveGameModalTitle">기보 저장</h3>
+            <p id="saveGameModalDescription">보관함에서 구분할 기보 제목을 정해 주세요.</p>
+            <label for="saveGameTitle">기보 제목</label>
+            <input id="saveGameTitle" type="text" maxlength="100" required>
+            <div class="title-limit">최대 100자 · 기본 제목을 그대로 사용해도 됩니다.</div>
+            <div id="saveGameModalError" class="board-modal-error" role="alert"></div>
+            <div class="board-modal-actions">
+                <button id="cancelSaveGameButton" type="button" class="modal-secondary-button">취소</button>
+                <button id="confirmSaveGameButton" type="button" class="modal-primary-button">보관함에 저장</button>
+            </div>
+        </section>
+    </div>
+
     <script type="module" src="/js/board/main.js"></script>
 </body>
 </html>
