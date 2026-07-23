@@ -1,4 +1,4 @@
-async function requestJson(url, options = {}) {
+async function request(url, options = {}) {
     const response = await fetch(url, {
         credentials: "same-origin",
         ...options,
@@ -6,15 +6,23 @@ async function requestJson(url, options = {}) {
     if (!response.ok) {
         throw new Error(`게임 API 요청 실패 (${response.status}): ${url}`);
     }
-    return response.json();
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    const contentType = response.headers.get("content-type");
+    return contentType?.includes("application/json")
+        ? response.json()
+        : response.text();
 }
 
 export function createGame() {
-    return requestJson("/api/games", { method: "POST" });
+    return request("/api/games", { method: "POST" });
 }
 
 export function importGame(payload) {
-    return requestJson("/api/games/import", {
+    return request("/api/games/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -22,15 +30,21 @@ export function importGame(payload) {
 }
 
 export function fetchGameTree(gameId) {
-    return requestJson(`/api/games/${encodeURIComponent(gameId)}/tree`);
+    return request(`/api/games/${encodeURIComponent(gameId)}/tree`);
 }
 
 export function saveGame(gameId) {
-    return requestJson(`/api/games/${encodeURIComponent(gameId)}/save`, {
+    return request(`/api/games/${encodeURIComponent(gameId)}/save`, {
         method: "PUT",
     });
 }
 
 export function fetchMyGames() {
-    return requestJson("/api/games/my");
+    return request("/api/games/my");
+}
+
+export function deleteGame(gameId) {
+    return request(`/api/games/${encodeURIComponent(gameId)}`, {
+        method: "DELETE",
+    });
 }
