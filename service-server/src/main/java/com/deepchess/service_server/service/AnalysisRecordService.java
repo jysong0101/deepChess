@@ -1,11 +1,10 @@
 package com.deepchess.service_server.service;
 
-import java.util.Map;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.deepchess.service_server.entity.Analysis;
+import com.deepchess.service_server.dto.response.AnalysisResponse;
 import com.deepchess.service_server.entity.Game;
 import com.deepchess.service_server.entity.Position;
 import com.deepchess.service_server.repository.AnalysisRepository;
@@ -24,11 +23,17 @@ public class AnalysisRecordService {
     private final ChessEngineService chessEngineService;
 
     @Transactional // 💡 파라미터에 positionId 가 추가되었습니다.
-    public Map<String, Object> analyzeAndSave(Long gameId, Long positionId, Long parentPositionId, String fen, String moveSan, int depth) {        
+    public AnalysisResponse analyzeAndSave(
+            Long gameId,
+            Long positionId,
+            Long parentPositionId,
+            String fen,
+            String moveSan,
+            int depth) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new IllegalArgumentException("게임을 찾을 수 없습니다."));
 
-        Map<String, Object> result = chessEngineService.analyzePosition(fen, depth);
+        AnalysisResponse result = chessEngineService.analyzePosition(fen, depth);
 
         Position position;
         // 💡 1. 기보 불러오기로 이미 DB에 존재하는 수라면? -> 복제하지 않고 찾아온다!
@@ -55,16 +60,14 @@ public class AnalysisRecordService {
         if (analysis == null) {
             analysis = Analysis.builder()
                     .position(position)
-                    .engineScore((String) result.get("engineScore"))
-                    .bestMoveUci((String) result.get("bestMoveUci"))
+                    .engineScore(result.engineScore())
+                    .bestMoveUci(result.bestMoveUci())
                     .depth(depth)
-                    .analysisDetail((String) result.get("analysisDetail"))
+                    .analysisDetail(result.analysisDetail())
                     .build();
             analysisRepository.save(analysis);
         }
 
-        result.put("positionId", position.getPositionId());
-        
-        return result;
+        return result.withPositionId(position.getPositionId());
     }
 }

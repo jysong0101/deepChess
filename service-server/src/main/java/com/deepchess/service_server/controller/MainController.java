@@ -5,10 +5,11 @@ import java.io.IOException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.deepchess.service_server.dto.request.NicknameRequest;
 import com.deepchess.service_server.entity.User;
 import com.deepchess.service_server.repository.UserRepository;
 
@@ -105,15 +106,14 @@ public class MainController {
     // 💡 닉네임 설정 폼 제출 시 닉네임을 DB에 업데이트하는 API
     @PostMapping("/api/users/nickname")
     public void setNickname(@AuthenticationPrincipal OAuth2User oAuth2User, 
-                            @RequestParam("nickname") String nickname, 
+                            @ModelAttribute NicknameRequest request,
                             HttpServletResponse response) throws IOException {
-        if (oAuth2User != null && nickname != null && !nickname.trim().isEmpty()) {
+        if (oAuth2User != null && request.hasNickname()) {
             String googleUid = oAuth2User.getAttribute("sub");
             User user = userRepository.findByGoogleUid(googleUid).orElse(null);
             
             if (user != null) {
-                // 닉네임 업데이트 및 isProfileSet = true 처리
-                user.updateNicknameAndCompleteProfile(nickname.trim());
+                user.updateNicknameAndCompleteProfile(request.trimmedNickname());
                 userRepository.save(user);
             }
         }

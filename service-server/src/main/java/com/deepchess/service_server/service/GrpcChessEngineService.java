@@ -9,9 +9,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
-import java.util.HashMap;
-import java.util.Map;
-
 @Service
 @Primary // ⬅️ MockChessEngineService 대신 이 클래스가 우선적으로 주입되도록 설정!
 public class GrpcChessEngineService implements ChessEngineService {
@@ -28,7 +25,7 @@ public class GrpcChessEngineService implements ChessEngineService {
     }
 
     @Override
-    public Map<String, Object> analyzePosition(String fen, int depth) {
+    public com.deepchess.service_server.dto.response.AnalysisResponse analyzePosition(String fen, int depth) {
         // 1. 파이썬 서버로 보낼 요청 객체 생성
         AnalyzeRequest request = AnalyzeRequest.newBuilder()
                 .setFen(fen)
@@ -38,14 +35,12 @@ public class GrpcChessEngineService implements ChessEngineService {
         // 2. gRPC 통신으로 결과 받아오기
         AnalyzeResponse response = blockingStub.analyzePosition(request);
 
-        // 3. 기존 Controller가 쓰던 Map 형태로 변환해서 리턴
-        Map<String, Object> result = new HashMap<>();
-        result.put("engineScore", response.getEngineScore());
-        result.put("bestMoveUci", response.getBestMove());
-        result.put("depth", depth);
-        result.put("analysisDetail", response.getDetailJson());
-
-        return result;
+        return new com.deepchess.service_server.dto.response.AnalysisResponse(
+                response.getEngineScore(),
+                response.getBestMove(),
+                depth,
+                response.getDetailJson(),
+                null);
     }
 
     @PreDestroy
