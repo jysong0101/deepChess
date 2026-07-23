@@ -6,13 +6,14 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.deepchess.service_server.dto.request.ImportGameRequest;
 import com.deepchess.service_server.dto.request.ImportMoveRequest;
@@ -28,7 +29,9 @@ import com.deepchess.service_server.entity.User;
 import com.deepchess.service_server.repository.AnalysisRepository;
 import com.deepchess.service_server.repository.GameRepository;
 import com.deepchess.service_server.repository.PositionRepository;
-import com.deepchess.service_server.repository.UserRepository;
+import com.deepchess.service_server.service.CurrentUserService;
+import com.deepchess.service_server.service.GameAccessService;
+import com.deepchess.service_server.service.GameDeletionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,16 +40,15 @@ import lombok.RequiredArgsConstructor;
 public class GameController {
 
     private final GameRepository gameRepository;
-    private final UserRepository userRepository;
     private final PositionRepository positionRepository;
     private final AnalysisRepository analysisRepository;
+    private final CurrentUserService currentUserService;
+    private final GameAccessService gameAccessService;
+    private final GameDeletionService gameDeletionService;
 
     @PostMapping("/api/games")
     public CreateGameResponse createNewGame(@AuthenticationPrincipal OAuth2User oAuth2User) {
-        requireAuthentication(oAuth2User);
-        String googleUid = oAuth2User.getAttribute("sub");
-        User user = userRepository.findByGoogleUid(googleUid)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        User user = currentUserService.requireCurrentUser(oAuth2User);
 
         Game game = Game.builder()
                 .user(user)
@@ -62,10 +64,7 @@ public class GameController {
     public ImportGameResponse importGame(
             @AuthenticationPrincipal OAuth2User oAuth2User,
             @RequestBody ImportGameRequest request) {
-        requireAuthentication(oAuth2User);
-        String googleUid = oAuth2User.getAttribute("sub");
-        User user = userRepository.findByGoogleUid(googleUid)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        User user = currentUserService.requireCurrentUser(oAuth2User);
 
         Game game = Game.builder()
                 .user(user)
@@ -99,7 +98,12 @@ public class GameController {
     }
 
     @GetMapping("/api/games/{gameId}/tree")
-    public List<GameTreeNodeResponse> getGameTree(@PathVariable Long gameId) {
+    public List<GameTreeNodeResponse> getGameTree(
+            @AuthenticationPrincipal OAuth2User oAuth2User,
+            @PathVariable Long gameId) {
+        User user = currentUserService.requireCurrentUser(oAuth2User);
+        gameAccessService.requireOwnedGame(gameId, user);
+
         List<Position> positions = positionRepository.findByGame_GameId(gameId);
         List<GameTreeNodeResponse> treeData = new ArrayList<>();
 
@@ -120,9 +124,8 @@ public class GameController {
     // 💡 추가됨: 분석을 즐기다가 유저가 명시적으로 '저장'을 눌렀을 때 호출되는 API
     @PutMapping("/api/games/{gameId}/save")
     public MessageResponse saveGameToLibrary(@AuthenticationPrincipal OAuth2User oAuth2User, @PathVariable Long gameId) {
-        requireAuthentication(oAuth2User);
-        
-        Game game = gameRepository.findById(gameId).orElseThrow(() -> new IllegalArgumentException("게임을 찾을 수 없습니다."));
+        User user = currentUserService.requireCurrentUser(oAuth2User);
+        Game game = gameAccessService.requireOwnedGame(gameId, user);
         game.markAsSaved();
         gameRepository.save(game);
         
@@ -132,11 +135,7 @@ public class GameController {
     // 💡 추가됨: 내 보관함 기보 목록 조회 API
     @GetMapping("/api/games/my")
     public List<SavedGameResponse> getMySavedGames(@AuthenticationPrincipal OAuth2User oAuth2User) {
-        requireAuthentication(oAuth2User);
-        
-        String googleUid = oAuth2User.getAttribute("sub");
-        User user = userRepository.findByGoogleUid(googleUid)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        User user = currentUserService.requireCurrentUser(oAuth2User);
 
         List<Game> savedGames = gameRepository.findByUserAndIsSavedTrueOrderByCreatedAtDesc(user);
         List<SavedGameResponse> response = new ArrayList<>();
@@ -150,9 +149,12 @@ public class GameController {
         return response;
     }
 
-    private void requireAuthentication(OAuth2User oAuth2User) {
-        if (oAuth2User == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
+    @DeleteMapping("/api/games/{gameId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSavedGame(
+            @AuthenticationPrincipal OAuth2User oAuth2User,
+            @PathVariable Long gameId) {
+        User user = currentUserService.requireCurrentUser(oAuth2User);
+        gameDeletionService.deleteOwnedSavedGame(gameId, user);
     }
 }

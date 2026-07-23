@@ -9,15 +9,21 @@ body {
 .container { width: 100%; max-width: 800px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
 h2 { color: #2c3e50; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
 .back-btn { text-decoration: none; color: #3498db; font-size: 0.8em; }
-.game-item { padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+.game-item { padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .game-item:hover { background-color: #f8f9fa; border-color: #3498db; transform: translateY(-2px); }
+.game-summary { min-width: 0; flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .game-date { color: #7f8c8d; font-size: 0.9em; font-weight: bold; }
-.game-preview { color: #34495e; font-size: 1.1em; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-preview { color: #34495e; font-size: 1.1em; min-width: 0; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-actions { flex: 0 0 auto; text-align: right; }
+.delete-game-button { padding: 8px 12px; border: 0; border-radius: 6px; background: #c0392b; color: white; font-weight: bold; cursor: pointer; }
+.delete-game-button:disabled { background: #95a5a6; cursor: wait; }
+.delete-error { max-width: 180px; margin-top: 6px; color: #c0392b; font-size: 0.8em; overflow-wrap: anywhere; }
 .no-data { text-align: center; color: #7f8c8d; padding: 40px 0; }
 .error-message { color: #c0392b; }
 
 @media (max-width: 600px) {
     body { margin: 15px; }
     .container { padding: 20px; }
-    .game-item { align-items: flex-start; gap: 10px; }
+    .game-item, .game-summary { align-items: flex-start; gap: 10px; }
+    .game-summary { flex-direction: column; }
 }
